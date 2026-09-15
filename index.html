@@ -286,7 +286,7 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
 .result-winner { font-size: 20px; font-weight: 800; color: var(--gold-light); }
 .result-score { font-size: 13px; color: #8FBFAA; margin-top: 3px; }
 .result-table { width: 100%; margin-top: 14px; border-collapse: collapse; background: transparent; }
-.result-table td { padding: 7px 8px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: left; color: var(--white); }
+.result-table td { padding: 7px 8px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: left; color: var(--white); overflow-wrap: break-word; }
 .result-table td:first-child { font-weight: 700; }
 .result-table td:last-child { text-align: right; }
 .result-table tr:last-child td { border-bottom: none; }
@@ -1728,20 +1728,27 @@ function finishRound() {
     const dStr    = `${r.delta >= 0 ? '+' : ''}${r.delta}`;
     const qArrow  = r.quotaChange > 0 ? '▲' : r.quotaChange < 0 ? '▼' : '—';
     const qColor  = r.quotaChange > 0 ? '#6fcf97' : r.quotaChange < 0 ? '#f08080' : '#8FBFAA';
-    const qStr    = `<span style="color:${qColor};font-size:11px"> · Q ${r.quota} ${qArrow} ${r.newQuota}</span>`;
+    const qStr    = `<span style="color:${qColor};font-size:11px;white-space:nowrap;"> · Q ${r.quota} ${qArrow} ${r.newQuota}</span>`;
     let teamLabel = '';
     if (state.isTeamGame && state.teams) {
       const myTeam = state.teams.find(t => t.playerIds.includes(r.id));
-      if (myTeam) teamLabel = `<span style="color:#8FBFAA;font-size:11px"> · ${myTeam.name}</span>`;
+      if (myTeam) teamLabel = `<span style="color:#8FBFAA;font-size:11px;">· ${myTeam.name}</span>`;
     }
     const won = indivPrizeById.get(r.id);
     const wonStr = won
-      ? ` <span style="color:var(--gold-light);font-weight:800;">$${won.prize}${won.tied?' (split)':''}</span>`
+      ? `<span style="color:var(--gold-light);font-weight:800;white-space:nowrap;">$${won.prize}${won.tied?' (split)':''}</span>`
       : '';
-    return `<tr>
-      <td>${medal} ${r.name}${teamLabel}</td>
-      <td>${r.pts} pts <span style="color:${dColor};font-weight:700">${dStr}</span>${qStr}${wonStr}</td>
-    </tr>`;
+    return `<div style="display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:2px 8px;padding:8px 4px;border-bottom:1px solid rgba(255,255,255,0.1);">
+      <div style="font-weight:700;font-size:14px;display:flex;flex-wrap:wrap;align-items:baseline;gap:0 6px;">
+        <span>${medal} ${r.name}</span>${teamLabel}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;align-items:baseline;justify-content:flex-end;gap:2px 6px;font-size:13px;">
+        <span style="white-space:nowrap;">${r.pts} pts</span>
+        <span style="color:${dColor};font-weight:700;white-space:nowrap;">${dStr}</span>
+        ${qStr}
+        ${wonStr}
+      </div>
+    </div>`;
   }).join('');
 
   // ── Worst performer vs. their quota ──
@@ -1752,10 +1759,12 @@ function finishRound() {
     </div>`;
 
   // ── Team payouts ──
-  // All teams contribute as if they have the same size as the LARGEST team.
-  // Smaller teams top up per-player: extra = (largestSz - teamSz) * $20 / teamSz
-  // Segments: front=$5/player, back=$5/player, total=$10/player (largest team basis)
-  // Winning team always collects largest-team stake × number of losing teams.
+  // Every team's TEAM-segment pot (front + back + total) is sized to the
+  // LARGEST team, so a short-handed team's real players split the full
+  // pot among themselves — e.g. a 3-player team covers the missing 4th
+  // player's share. The $10 individual-payout portion is flat per real
+  // player and is never inflated to cover a missing player.
+  // Standard (full team) stake: $5 front + $5 back + $10 total + $10 indiv = $30/player.
   let teamPayoutHtml = '';
   if (state.isTeamGame && state.teams && state.teams.length > 0) {
     const teamSizes   = state.teams.map(t => t.playerIds.length);
@@ -1764,15 +1773,17 @@ function finishRound() {
     const frontStake  = largestSz * 5;   // e.g. 4 players × $5 = $20
     const backStake   = largestSz * 5;
     const totalStake  = largestSz * 10;
-    const fullStake   = frontStake + backStake + totalStake; // $20+$20+$40 = $80
+    const teamStake   = frontStake + backStake + totalStake; // $20+$20+$40 = $80 team pot
+    const INDIV_STAKE = 10; // flat per real player, never inflated for a missing player
 
     // Per-player costs for each team
     const teamPlayerCosts = state.teams.map(t => {
-      const sz        = t.playerIds.length;
-      const teamFull  = fullStake; // each team puts in the same total
-      const perPlayer = teamFull / sz;
-      const standard  = fullStake / largestSz; // what largest-team player pays
-      const extra     = perPlayer - standard;
+      const sz             = t.playerIds.length;
+      const teamShare      = teamStake / sz;               // this team's cut of the $80 pot, split among its REAL players
+      const perPlayer      = teamShare + INDIV_STAKE;       // + flat $10 individual stake
+      const standardShare  = teamStake / largestSz;         // what a full-team player pays for the team portion
+      const standard       = standardShare + INDIV_STAKE;   // full standard stake, e.g. $30
+      const extra          = perPlayer - standard;          // top-up a short team pays to cover the missing player(s)
       return {
         teamId: t.id,
         name: t.name,
@@ -1925,7 +1936,7 @@ function finishRound() {
     ${teamPayoutHtml}
     <div style="margin:16px 0 6px;font-size:12px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;">🏌️ Individual</div>
     <div style="margin-bottom:8px;font-size:14px;color:var(--gold-light);font-weight:700;">${indivWinStr}</div>
-    <table class="result-table"><tbody>${indivRows}</tbody></table>
+    <div>${indivRows}</div>
     ${worstNote}
     ${moneyRecapHtml}
     <div style="margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">

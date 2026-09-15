@@ -22,6 +22,11 @@
   --blue:       #2563EB;
 }
 
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
 body {
   font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
   background: var(--fairway);
@@ -32,21 +37,38 @@ body {
 /* ── NAV ── */
 .nav {
   background: var(--green-deep); color: var(--white);
-  padding: 0 20px; display: flex; align-items: stretch; height: 54px;
+  padding: 0 12px; display: flex; align-items: stretch; height: 54px;
+  overflow: hidden;
 }
-.nav-brand { display: flex; align-items: center; gap: 9px; margin-right: 20px; flex-shrink: 0; }
-.nav-brand .flag { font-size: 22px; }
-.nav-brand .title { font-size: 16px; font-weight: 700; letter-spacing: -0.2px; }
-.nav-tabs { display: flex; align-items: stretch; }
+.nav-brand { display: flex; align-items: center; gap: 7px; margin-right: 10px; flex-shrink: 1; min-width: 0; overflow: hidden; }
+.nav-brand .flag { font-size: 20px; flex-shrink: 0; }
+.nav-brand .title {
+  font-size: 15px; font-weight: 700; letter-spacing: -0.2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.nav-sync { flex-shrink: 0; }
+.nav-tabs {
+  display: flex; align-items: stretch; flex-shrink: 0;
+  overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
+.nav-tabs::-webkit-scrollbar { display: none; }
 .nav-tab {
-  display: flex; align-items: center; gap: 6px;
-  padding: 0 16px; font-size: 13px; font-weight: 600;
+  display: flex; align-items: center; gap: 5px;
+  padding: 0 12px; font-size: 12px; font-weight: 600;
   color: rgba(255,255,255,0.55); cursor: pointer;
-  border-bottom: 3px solid transparent;
+  border-bottom: 3px solid transparent; flex-shrink: 0;
   transition: color 0.15s, border-color 0.15s; white-space: nowrap;
 }
 .nav-tab:hover { color: rgba(255,255,255,0.85); }
 .nav-tab.active { color: var(--white); border-bottom-color: var(--gold); }
+
+@media (max-width: 480px) {
+  .nav { padding: 0 8px; }
+  .nav-brand { margin-right: 6px; }
+  .nav-brand .title { font-size: 12px; max-width: 78px; }
+  .nav-sync { display: none; }
+  .nav-tab { padding: 0 9px; font-size: 11px; gap: 3px; }
+}
 
 /* ── SCREENS ── */
 .screen { display: none; }
@@ -177,7 +199,7 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 
 /* ── SETUP ── */
 .player-pick-row {
-  display: flex; gap: 8px; align-items: center;
+  display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center;
   padding: 10px 0; border-bottom: 1px solid #F0EDE6;
 }
 .player-pick-row:last-child { border-bottom: none; }
@@ -188,7 +210,15 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 }
 .pick-name { font-size: 14px; font-weight: 600; }
 .pick-meta { font-size: 11px; color: var(--ink-soft); }
-.pick-quota { font-size: 12px; font-weight: 700; color: var(--green-deep); background: #F0EDE6; padding: 3px 8px; border-radius: 3px; white-space: nowrap; }
+.pick-quota { font-size: 12px; font-weight: 700; color: var(--green-deep); background: #F0EDE6; padding: 3px 8px; border-radius: 3px; white-space: nowrap; flex-shrink: 0; }
+.pick-info-line {
+  flex: 1 1 100%; min-width: 0; order: 3;
+  font-size: 11px; color: var(--ink-soft);
+  display: flex; align-items: center; flex-wrap: wrap; gap: 4px 6px;
+  padding-left: 40px; margin-top: 2px;
+}
+.pick-main-row { display: flex; align-items: center; gap: 10px; flex: 1 1 auto; min-width: 0; order: 1; }
+.pick-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; order: 2; margin-left: auto; }
 
 /* ── SCORECARD ── */
 .leaderboard {
@@ -294,8 +324,8 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
 <!-- NAV -->
 <nav class="nav">
   <div class="nav-brand"><span class="flag">⛳</span><span class="title">Huntsville Stableford</span></div>
-  <div style="flex:1;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;">
-    <span id="sync-status" style="font-size:11px;color:var(--gold);">⏳ Syncing...</span>
+  <div class="nav-sync" style="display:flex;align-items:center;margin-right:8px;">
+    <span id="sync-status" style="font-size:11px;color:var(--gold);white-space:nowrap;">⏳ Syncing...</span>
   </div>
   <div class="nav-tabs">
     <div class="nav-tab active" onclick="showScreen('profiles')" id="tab-profiles">👤 Profiles</div>
@@ -1052,19 +1082,21 @@ function renderSetup() {
         ${TEE_ORDER.map(t => `<option value="${t}" ${t===roundTee?'selected':''}>${teeBadgeIcon(t)} ${t}</option>`).join('')}
       </select>` : '';
     return `<div class="player-pick-row" style="${inRound?'background:#F0EDE6;border-radius:4px;padding-left:8px':''}">
-      <div class="pick-avatar" style="background:${color}">${initials(p.name)}</div>
-      <div style="flex:1;min-width:0;">
-        <div class="pick-name">${p.name}</div>
-        <div style="font-size:11px;color:var(--ink-soft);display:flex;align-items:center;flex-wrap:wrap;gap:4px;">
-          <span>${teamStr}</span>
-          ${inRound ? `<span>· Tee: ${teeSelector}${adjStr}</span>` : `<span>· ${teeBadgeIcon(p.tee)} ${p.tee||'White'}</span>`}
-        </div>
+      <div class="pick-main-row">
+        <div class="pick-avatar" style="background:${color}">${initials(p.name)}</div>
+        <div class="pick-name" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.name}</div>
       </div>
-      <div class="pick-quota">Q: ${p.quota}${adj!==0?`<span style="color:${adj>0?'var(--green-mid)':'var(--red)'};font-size:10px;display:block;">${adj>0?'+':''}${adj} tee</span>`:''}</div>
-      <button class="btn btn-sm ${inRound?'btn-danger':'btn-outline'}" style="margin-left:8px"
-        onclick="toggleSetupPlayer('${p.id}')">
-        ${inRound ? '− Remove' : '+ Add'}
-      </button>
+      <div class="pick-actions">
+        <div class="pick-quota">Q: ${p.quota}${adj!==0?`<span style="color:${adj>0?'var(--green-mid)':'var(--red)'};font-size:10px;display:block;">${adj>0?'+':''}${adj} tee</span>`:''}</div>
+        <button class="btn btn-sm ${inRound?'btn-danger':'btn-outline'}"
+          onclick="toggleSetupPlayer('${p.id}')">
+          ${inRound ? '− Remove' : '+ Add'}
+        </button>
+      </div>
+      <div class="pick-info-line">
+        <span>${teamStr}</span>
+        ${inRound ? `<span>· Tee: ${teeSelector}${adjStr}</span>` : `<span>· ${teeBadgeIcon(p.tee)} ${p.tee||'White'}</span>`}
+      </div>
     </div>`;
   }).join('');
 }

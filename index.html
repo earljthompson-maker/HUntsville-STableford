@@ -3,11 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light only">
+<meta name="theme-color" content="#1B4D3E">
 <title>Huntsville Stableford Game</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
+  color-scheme: light only;
   --green-deep: #1B4D3E;
   --green-mid:  #2E6B54;
   --green-light:#4A8C6F;
@@ -255,7 +258,7 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
 .result-winner { font-size: 20px; font-weight: 800; color: var(--gold-light); }
 .result-score { font-size: 13px; color: #8FBFAA; margin-top: 3px; }
 .result-table { width: 100%; margin-top: 14px; border-collapse: collapse; }
-.result-table td { padding: 7px 8px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: left; }
+.result-table td { padding: 7px 8px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: left; color: #fff; }
 .result-table td:last-child { text-align: right; }
 .result-table tr:last-child td { border-bottom: none; }
 
@@ -286,6 +289,22 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
   .form-row.col3 { grid-template-columns: 1fr 1fr; }
   .score-input { width: 64px; font-size: 22px; }
   .lb-pts { font-size: 20px; }
+
+  .nav { padding: 0 6px; height: 58px; }
+  .nav-brand { margin-right: 6px; }
+  .nav-brand .title { display: none; }
+  .nav-brand .flag { font-size: 26px; }
+  .nav-tabs { flex: 1; }
+  .nav-tab {
+    flex: 1; min-width: 0;
+    flex-direction: column; justify-content: center; gap: 2px;
+    padding: 4px 2px; font-size: 11px; text-align: center;
+    white-space: normal; line-height: 1.15;
+  }
+}
+
+@media (max-width: 360px) {
+  .nav-tab { font-size: 10px; }
 }
 </style>
 </head>
@@ -1750,7 +1769,7 @@ function finishRound() {
 
     const teamWinStr = teamTie
       ? `🤝 Tie — ${teamWinners.map(t => t.name).join(' & ')} split the pot!`
-      : `${teamsWithDelta[0].name} wins!`;
+      : '';
     teamWinnerLabel = teamTie
       ? teamWinners.map(t => t.name).join(' & ')
       : teamsWithDelta[0].name;
@@ -1774,9 +1793,9 @@ function finishRound() {
     teamSection = `
       <div style="margin:14px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">⛳ Team Result</div>
       ${blindNote}
-      <div style="font-size:18px;font-weight:800;color:var(--gold-light);margin-bottom:10px;">${teamWinStr}</div>
+      ${teamWinStr ? `<div style="font-size:15px;font-weight:700;color:var(--gold-light);margin-bottom:10px;">${teamWinStr}</div>` : ''}
       <table class="result-table" style="margin-bottom:10px;"><tbody>${teamRows}</tbody></table>
-      <div style="margin:10px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">🏌️ Individual Result</div>`;
+      <div style="margin:10px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">🏌️ Indy Result</div>`;
   }
 
   // ── Individual result rows — sorted by delta ──
@@ -1794,8 +1813,8 @@ function finishRound() {
       if (myTeam) teamLabel = `<span style="color:#8FBFAA;font-size:11px"> · ${myTeam.name}</span>`;
     }
     return `<tr>
-      <td>${medal} ${r.name}${teamLabel}</td>
-      <td>${r.pts} pts <span style="color:${dColor};font-weight:700">${dStr}</span>${qStr}</td>
+      <td style="color:#fff;">${medal} ${r.name}${teamLabel}</td>
+      <td style="color:#fff;">${r.pts} pts <span style="color:${dColor};font-weight:700">${dStr}</span>${qStr}</td>
     </tr>`;
   }).join('');
 
@@ -1848,7 +1867,7 @@ function finishRound() {
       const totalPrize = positions.reduce((s, pos) => s + (indivPayout[pos] || 0), 0);
       const eachGets   = tied.length > 1 ? Math.round(totalPrize / tied.length) : totalPrize;
       tied.forEach(r => {
-        if (eachGets > 0) rows.push({ name: r.name, delta: r.delta, prize: eachGets, tied: tied.length > 1 });
+        if (eachGets > 0) rows.push({ id: r.id, name: r.name, delta: r.delta, prize: eachGets, tied: tied.length > 1 });
       });
       i += tied.length;
     }
@@ -1936,17 +1955,19 @@ function finishRound() {
     const fmtMoney = v => `$${Number.isInteger(v) ? v : v.toFixed(2)}`;
 
     const fmtDelta = v => `${v >= 0 ? '+' : ''}${Math.round(v * 100) / 100}`;
-    const segRow = (label, result) => {
+    const segBlock = (label, result) => {
       if (!result) return '';
-      const winNames = result.winners.map(t =>
-        `${t.name} (${t.members}) avg ${fmtDelta(result.key === 'frontDelta' ? t.frontDelta : result.key === 'backDelta' ? t.backDelta : t.totalDelta)}/player`
-      ).join(' / ');
+      const winTeamNames = result.winners.map(t => t.name).join(' & ');
+      const winMembers   = result.winners.map(t => t.members).join(' & ');
       const prize = result.tie ? `${fmtMoney(result.prize)} each (tie)` : fmtMoney(result.prize);
-      return `<tr>
-        <td>${label}</td>
-        <td style="font-size:11px">${winNames}</td>
-        <td style="color:var(--gold-light);font-weight:700">${prize}</td>
-      </tr>`;
+      return `<div style="padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.1);">
+        <div style="font-size:10px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">${label}</div>
+        <div style="font-size:14px;">
+          <strong style="color:var(--gold-light)">${winTeamNames}</strong> wins
+          <strong style="color:var(--gold-light)">${prize}</strong>
+        </div>
+        <div style="font-size:10px;color:#8FBFAA;margin-top:1px;">${winMembers}</div>
+      </div>`;
     };
 
     // Player cost breakdown
@@ -1961,17 +1982,18 @@ function finishRound() {
 
     teamPayoutHtml = `
       <div style="margin:14px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">💰 Team Payouts</div>
-      <table class="result-table" style="margin-bottom:6px;">
-        <tbody>
-          ${segRow('Front 9', frontW)}
-          ${segRow('Back 9', backW)}
-          ${segRow('Total', totW)}
-        </tbody>
-      </table>
+      <div style="margin-bottom:6px;">
+        ${segBlock('Front 9', frontW)}
+        ${segBlock('Back 9', backW)}
+        ${segBlock('Total', totW)}
+      </div>
       <div style="margin:8px 0 4px;font-size:10px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">Player Stakes</div>
       <table class="result-table" style="margin-bottom:10px;">
         <tbody>${costRows}</tbody>
       </table>`;
+
+    // Stash for the per-player payout summary below (needs to survive outside this block)
+    state._payoutCalc = { fmtMoney, frontW, backW, totW, teamPlayerCosts };
   }
 
   // Individual payout HTML
@@ -1985,14 +2007,53 @@ function finishRound() {
       </tr>`;
     }).join('');
     return rows ? `
-      <div style="margin:14px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">💰 Individual Payouts</div>
+      <div style="margin:14px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">💰 Indy Payouts</div>
       <table class="result-table" style="margin-bottom:10px;"><tbody>${rows}</tbody></table>` : '';
   })();
 
+  // ── Payout Total by Player ──
+  // Combines: indy prize (if any) + team net (winnings received minus stake paid, if a team game)
+  const fmtSigned = v => {
+    const r = Math.round(v * 100) / 100;
+    const abs = Math.abs(r);
+    const disp = Number.isInteger(abs) ? abs : abs.toFixed(2);
+    return r > 0 ? `+$${disp}` : r < 0 ? `-$${disp}` : '$0';
+  };
+  const payoutByPlayer = state.players.map(p => {
+    let total = 0;
+    const ip = indivPayoutRows.find(r => r.id === p.id);
+    if (ip) total += ip.prize;
+    if (state.isTeamGame && state.teams && state._payoutCalc) {
+      const { frontW, backW, totW, teamPlayerCosts } = state._payoutCalc;
+      const myTeam = state.teams.find(t => t.playerIds.includes(p.id));
+      if (myTeam) {
+        const cost = teamPlayerCosts.find(tc => tc.teamId === myTeam.id);
+        const stake = cost ? cost.perPlayer : 0;
+        let gross = 0;
+        [frontW, backW, totW].forEach(result => {
+          if (!result) return;
+          const wonTeam = result.winners.find(t => t.id === myTeam.id);
+          if (wonTeam) gross += result.prize / wonTeam.sz;
+        });
+        total += gross - stake;
+      }
+    }
+    return { name: p.name, total };
+  }).sort((a, b) => b.total - a.total);
+
+  const payoutSummaryHtml = payoutByPlayer.some(r => r.total !== 0) ? `
+    <div style="margin:14px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">💵 Payout Total — By Player</div>
+    <table class="result-table" style="margin-bottom:10px;"><tbody>
+      ${payoutByPlayer.map(r => `<tr>
+        <td>${r.name}</td>
+        <td style="color:${r.total > 0 ? '#6fcf97' : r.total < 0 ? '#f08080' : '#8FBFAA'};font-weight:700">${fmtSigned(r.total)}</td>
+      </tr>`).join('')}
+    </tbody></table>` : '';
+
   // ── Winner headline ──
   const indivWinStr = indivTie
-    ? `🤝 Individual tie — ${indivWinners.map(r => r.name.split(' ')[0]).join(' & ')}`
-    : `${withDelta[0].name} wins individually!`;
+    ? `🤝 Indy tie — ${indivWinners.map(r => r.name.split(' ')[0]).join(' & ')}`
+    : `${withDelta[0].name} wins indy!`;
   const headlineWinner = state.isTeamGame && state.teams?.length > 0
     ? teamWinnerLabel
     : withDelta[0].name;
@@ -2003,10 +2064,11 @@ function finishRound() {
     <div class="result-score">${state.date}</div>
     ${teamSection}
     ${teamPayoutHtml}
-    ${!state.isTeamGame ? `<div style="margin:14px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">🏌️ Individual Result</div>` : ''}
+    ${!state.isTeamGame ? `<div style="margin:14px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">🏌️ Indy Result</div>` : ''}
     <div style="margin-bottom:8px;font-size:14px;color:var(--gold-light);font-weight:700;">${indivWinStr}</div>
     <table class="result-table"><tbody>${indivRows}</tbody></table>
     ${indivPayoutHtml}
+    ${payoutSummaryHtml}
     <div style="margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
       <button class="btn btn-outline btn-sm" onclick="showScreen('profiles')" style="color:#fff;border-color:rgba(255,255,255,0.3)">View Profiles</button>
       <button class="btn btn-outline btn-sm" onclick="newRound()" style="color:#fff;border-color:rgba(255,255,255,0.3)">New Round</button>

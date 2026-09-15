@@ -3,14 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="color-scheme" content="light only">
-<meta name="theme-color" content="#1B4D3E">
 <title>Huntsville Stableford Game</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  color-scheme: light only;
   --green-deep: #1B4D3E;
   --green-mid:  #2E6B54;
   --green-light:#4A8C6F;
@@ -258,7 +255,7 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
 .result-winner { font-size: 20px; font-weight: 800; color: var(--gold-light); }
 .result-score { font-size: 13px; color: #8FBFAA; margin-top: 3px; }
 .result-table { width: 100%; margin-top: 14px; border-collapse: collapse; }
-.result-table td { padding: 7px 8px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: left; color: #fff; }
+.result-table td { padding: 7px 8px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: left; }
 .result-table td:last-child { text-align: right; }
 .result-table tr:last-child td { border-bottom: none; }
 
@@ -289,22 +286,6 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
   .form-row.col3 { grid-template-columns: 1fr 1fr; }
   .score-input { width: 64px; font-size: 22px; }
   .lb-pts { font-size: 20px; }
-
-  .nav { padding: 0 6px; height: 58px; }
-  .nav-brand { margin-right: 6px; }
-  .nav-brand .title { display: none; }
-  .nav-brand .flag { font-size: 26px; }
-  .nav-tabs { flex: 1; }
-  .nav-tab {
-    flex: 1; min-width: 0;
-    flex-direction: column; justify-content: center; gap: 2px;
-    padding: 4px 2px; font-size: 11px; text-align: center;
-    white-space: normal; line-height: 1.15;
-  }
-}
-
-@media (max-width: 360px) {
-  .nav-tab { font-size: 10px; }
 }
 </style>
 </head>
@@ -505,7 +486,6 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ══════════════════════════════════════
 // TEE HELPERS
@@ -535,12 +515,6 @@ const SB_URL = 'https://ztjormtftfgznxmktlsj.supabase.co';
 const SB_KEY = 'sb_publishable_KEs4CmnzwEJpzsKRjuFHXw_x-aoEdlI';
 
 let sbOnline = false;
-
-// Real supabase-js client — used only for realtime subscriptions.
-// (Profile/history reads & writes still use the existing raw-fetch helpers below.)
-const sbClient = (typeof supabase !== 'undefined')
-  ? supabase.createClient(SB_URL, SB_KEY)
-  : null;
 
 async function sbGet(table) {
   try {
@@ -664,125 +638,6 @@ function updateSyncStatus() {
 }
 
 function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
-
-// ══════════════════════════════════════
-// LIVE ROUND SYNC — realtime, shared scoring across devices
-// There is only ever one shared "current" live round at a time.
-// Requires a Supabase table `live_round` (id text primary key, data jsonb)
-// with Realtime enabled — see setup SQL provided separately.
-// ══════════════════════════════════════
-const LIVE_ROUND_KEY = 'current';
-let liveChannel = null;
-let applyingRemoteUpdate = false; // guards against re-broadcasting a change we just received
-let livePushTimer = null;
-let lastLiveVersion = 0; // bumped on every local edit, sent along so we can ignore stale echoes
-
-async function pushLiveRound() {
-  if (!state.roundId) return;
-  clearTimeout(livePushTimer);
-  livePushTimer = setTimeout(async () => {
-    lastLiveVersion++;
-    state._v = lastLiveVersion;
-    await sbUpsert('live_round', LIVE_ROUND_KEY, state);
-  }, 150); // small debounce so rapid typing doesn't spam writes
-}
-
-async function deleteLiveRound() {
-  await sbDelete('live_round', LIVE_ROUND_KEY);
-}
-
-function subscribeLiveRound() {
-  unsubscribeLiveRound();
-  if (!sbClient) return;
-  liveChannel = sbClient
-    .channel('live_round_changes')
-    .on('postgres_changes',
-      { event: '*', schema: 'public', table: 'live_round', filter: `id=eq.${LIVE_ROUND_KEY}` },
-      (payload) => {
-        if (payload.eventType === 'DELETE') return; // round finished/abandoned elsewhere
-        const remote = payload.new && payload.new.data;
-        if (!remote) return;
-        // Ignore the echo of our own most recent write
-        if (remote._v && remote._v === lastLiveVersion) return;
-        applyRemoteRoundData(remote);
-      })
-    .subscribe();
-}
-
-function unsubscribeLiveRound() {
-  if (liveChannel && sbClient) sbClient.removeChannel(liveChannel);
-  liveChannel = null;
-}
-
-function applyRemoteRoundData(remote) {
-  applyingRemoteUpdate = true;
-  state = remote;
-  lastLiveVersion = remote._v || lastLiveVersion;
-  if (document.getElementById('screen-scorecard').classList.contains('active')) {
-    renderScorecard();
-  }
-  applyingRemoteUpdate = false;
-}
-
-// Global watcher: lets a device sitting on Profiles/Setup know a round just
-// started elsewhere, without having to already be viewing the scorecard.
-let joinBannerRoundId = null;
-function subscribeGlobalRoundWatcher() {
-  if (!sbClient) return;
-  sbClient
-    .channel('live_round_watcher')
-    .on('postgres_changes',
-      { event: '*', schema: 'public', table: 'live_round' },
-      (payload) => {
-        if (payload.eventType === 'DELETE') {
-          joinBannerRoundId = null;
-          renderJoinBanner();
-          return;
-        }
-        const remote = payload.new && payload.new.data;
-        if (!remote) return;
-        const onScorecard = document.getElementById('screen-scorecard').classList.contains('active');
-        const isMyRound = state.roundId && state.roundId === remote.roundId;
-        if (onScorecard && isMyRound) return; // already in it, handled by subscribeLiveRound
-        joinBannerRoundId = remote.roundId;
-        renderJoinBanner(remote);
-      })
-    .subscribe();
-}
-
-function renderJoinBanner(remote) {
-  const existing = document.getElementById('join-live-banner');
-  if (existing) existing.remove();
-  if (!joinBannerRoundId) return;
-  const names = (remote?.players || []).map(p => p.name.split(' ')[0]).join(', ');
-  const banner = document.createElement('div');
-  banner.id = 'join-live-banner';
-  banner.style.cssText = 'position:sticky;top:0;z-index:50;background:var(--gold);color:var(--ink);padding:10px 16px;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:space-between;gap:10px;';
-  banner.innerHTML = `<span>🔴 Live round in progress${names ? ' — ' + names : ''}</span>
-    <button class="btn btn-primary btn-sm" onclick="joinLiveRound()">Join Scorecard</button>`;
-  document.body.prepend(banner);
-}
-
-async function joinLiveRound() {
-  const rows = await sbGet('live_round');
-  const round = (rows || [])[0];
-  if (!round) return;
-  state = round;
-  subscribeLiveRound();
-  const b = document.getElementById('join-live-banner');
-  if (b) b.remove();
-  showScreen('scorecard');
-  renderScorecard();
-}
-
-async function checkForLiveRoundOnLoad() {
-  const rows = await sbGet('live_round');
-  const round = (rows || [])[0];
-  if (round && !state.roundId) {
-    joinBannerRoundId = round.roundId;
-    renderJoinBanner(round);
-  }
-}
 
 const PLAYER_COLORS = ['#1B4D3E','#2563EB','#C0392B','#C9A84C','#6B3FA0','#0E7490'];
 function initials(name) { return name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2); }
@@ -1488,19 +1343,12 @@ function startRound() {
 
   const assignMethod = document.getElementById('team-assign').value;
   const blindDraw = assignMethod === 'blind';
-  const roundId = genId();
-  state = { numHoles, hasFrontBack, players, date, quotaGame, scores, isTeamGame, teams, fmt, blindDraw, roundId };
+  state = { numHoles, hasFrontBack, players, date, quotaGame, scores, isTeamGame, teams, fmt, blindDraw };
   manualTeams = [];
-
-  const banner = document.getElementById('join-live-banner');
-  if (banner) banner.remove();
-  joinBannerRoundId = null;
 
   showScreen('scorecard');
   document.getElementById('result-banner').style.display = 'none';
   renderScorecard();
-  subscribeLiveRound();
-  pushLiveRound();
 }
 
 // ══════════════════════════════════════
@@ -1516,7 +1364,6 @@ function totalPoints(pid) {
 function updateScore(pid, half, val) {
   state.scores[pid][half] = val === '' ? '' : parseInt(val);
   renderScorecard();
-  if (!applyingRemoteUpdate) pushLiveRound();
 }
 
 function teamTotal(team) {
@@ -1525,7 +1372,7 @@ function teamTotal(team) {
 
 function renderScorecard() {
   const { players, quotaGame, hasFrontBack, isTeamGame, teams } = state;
-  document.getElementById('sc-title').innerHTML = 'Scorecard' + (state.roundId ? ' <span style="color:var(--red);font-size:11px;font-weight:800;vertical-align:middle;">● LIVE</span>' : '');
+  document.getElementById('sc-title').textContent = 'Scorecard';
   document.getElementById('sc-meta').textContent  = state.date + (quotaGame ? ' · Quota game' : '') + (isTeamGame ? ' · ' + state.fmt : '');
 
   // Team scores panel
@@ -1695,8 +1542,6 @@ function calcNewQuota(currentQuota, points) {
 // FINISH ROUND
 // ══════════════════════════════════════
 function finishRound() {
-  deleteLiveRound();
-  unsubscribeLiveRound();
   const { players, quotaGame } = state;
   const ranked = players.map(p => ({ ...p, pts: totalPoints(p.id) }))
     .sort((a,b) => b.pts - a.pts);
@@ -1769,7 +1614,7 @@ function finishRound() {
 
     const teamWinStr = teamTie
       ? `🤝 Tie — ${teamWinners.map(t => t.name).join(' & ')} split the pot!`
-      : '';
+      : `${teamsWithDelta[0].name} wins!`;
     teamWinnerLabel = teamTie
       ? teamWinners.map(t => t.name).join(' & ')
       : teamsWithDelta[0].name;
@@ -1793,9 +1638,9 @@ function finishRound() {
     teamSection = `
       <div style="margin:14px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">⛳ Team Result</div>
       ${blindNote}
-      ${teamWinStr ? `<div style="font-size:15px;font-weight:700;color:var(--gold-light);margin-bottom:10px;">${teamWinStr}</div>` : ''}
+      <div style="font-size:18px;font-weight:800;color:var(--gold-light);margin-bottom:10px;">${teamWinStr}</div>
       <table class="result-table" style="margin-bottom:10px;"><tbody>${teamRows}</tbody></table>
-      <div style="margin:10px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">🏌️ Indy Result</div>`;
+      <div style="margin:10px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">🏌️ Individual Result</div>`;
   }
 
   // ── Individual result rows — sorted by delta ──
@@ -1813,8 +1658,8 @@ function finishRound() {
       if (myTeam) teamLabel = `<span style="color:#8FBFAA;font-size:11px"> · ${myTeam.name}</span>`;
     }
     return `<tr>
-      <td style="color:#fff;">${medal} ${r.name}${teamLabel}</td>
-      <td style="color:#fff;">${r.pts} pts <span style="color:${dColor};font-weight:700">${dStr}</span>${qStr}</td>
+      <td>${medal} ${r.name}${teamLabel}</td>
+      <td>${r.pts} pts <span style="color:${dColor};font-weight:700">${dStr}</span>${qStr}</td>
     </tr>`;
   }).join('');
 
@@ -1867,7 +1712,7 @@ function finishRound() {
       const totalPrize = positions.reduce((s, pos) => s + (indivPayout[pos] || 0), 0);
       const eachGets   = tied.length > 1 ? Math.round(totalPrize / tied.length) : totalPrize;
       tied.forEach(r => {
-        if (eachGets > 0) rows.push({ id: r.id, name: r.name, delta: r.delta, prize: eachGets, tied: tied.length > 1 });
+        if (eachGets > 0) rows.push({ name: r.name, delta: r.delta, prize: eachGets, tied: tied.length > 1 });
       });
       i += tied.length;
     }
@@ -1955,19 +1800,17 @@ function finishRound() {
     const fmtMoney = v => `$${Number.isInteger(v) ? v : v.toFixed(2)}`;
 
     const fmtDelta = v => `${v >= 0 ? '+' : ''}${Math.round(v * 100) / 100}`;
-    const segBlock = (label, result) => {
+    const segRow = (label, result) => {
       if (!result) return '';
-      const winTeamNames = result.winners.map(t => t.name).join(' & ');
-      const winMembers   = result.winners.map(t => t.members).join(' & ');
+      const winNames = result.winners.map(t =>
+        `${t.name} (${t.members}) avg ${fmtDelta(result.key === 'frontDelta' ? t.frontDelta : result.key === 'backDelta' ? t.backDelta : t.totalDelta)}/player`
+      ).join(' / ');
       const prize = result.tie ? `${fmtMoney(result.prize)} each (tie)` : fmtMoney(result.prize);
-      return `<div style="padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.1);">
-        <div style="font-size:10px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">${label}</div>
-        <div style="font-size:14px;">
-          <strong style="color:var(--gold-light)">${winTeamNames}</strong> wins
-          <strong style="color:var(--gold-light)">${prize}</strong>
-        </div>
-        <div style="font-size:10px;color:#8FBFAA;margin-top:1px;">${winMembers}</div>
-      </div>`;
+      return `<tr>
+        <td>${label}</td>
+        <td style="font-size:11px">${winNames}</td>
+        <td style="color:var(--gold-light);font-weight:700">${prize}</td>
+      </tr>`;
     };
 
     // Player cost breakdown
@@ -1982,18 +1825,17 @@ function finishRound() {
 
     teamPayoutHtml = `
       <div style="margin:14px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">💰 Team Payouts</div>
-      <div style="margin-bottom:6px;">
-        ${segBlock('Front 9', frontW)}
-        ${segBlock('Back 9', backW)}
-        ${segBlock('Total', totW)}
-      </div>
+      <table class="result-table" style="margin-bottom:6px;">
+        <tbody>
+          ${segRow('Front 9', frontW)}
+          ${segRow('Back 9', backW)}
+          ${segRow('Total', totW)}
+        </tbody>
+      </table>
       <div style="margin:8px 0 4px;font-size:10px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">Player Stakes</div>
       <table class="result-table" style="margin-bottom:10px;">
         <tbody>${costRows}</tbody>
       </table>`;
-
-    // Stash for the per-player payout summary below (needs to survive outside this block)
-    state._payoutCalc = { fmtMoney, frontW, backW, totW, teamPlayerCosts };
   }
 
   // Individual payout HTML
@@ -2007,53 +1849,14 @@ function finishRound() {
       </tr>`;
     }).join('');
     return rows ? `
-      <div style="margin:14px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">💰 Indy Payouts</div>
+      <div style="margin:14px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">💰 Individual Payouts</div>
       <table class="result-table" style="margin-bottom:10px;"><tbody>${rows}</tbody></table>` : '';
   })();
 
-  // ── Payout Total by Player ──
-  // Combines: indy prize (if any) + team net (winnings received minus stake paid, if a team game)
-  const fmtSigned = v => {
-    const r = Math.round(v * 100) / 100;
-    const abs = Math.abs(r);
-    const disp = Number.isInteger(abs) ? abs : abs.toFixed(2);
-    return r > 0 ? `+$${disp}` : r < 0 ? `-$${disp}` : '$0';
-  };
-  const payoutByPlayer = state.players.map(p => {
-    let total = 0;
-    const ip = indivPayoutRows.find(r => r.id === p.id);
-    if (ip) total += ip.prize;
-    if (state.isTeamGame && state.teams && state._payoutCalc) {
-      const { frontW, backW, totW, teamPlayerCosts } = state._payoutCalc;
-      const myTeam = state.teams.find(t => t.playerIds.includes(p.id));
-      if (myTeam) {
-        const cost = teamPlayerCosts.find(tc => tc.teamId === myTeam.id);
-        const stake = cost ? cost.perPlayer : 0;
-        let gross = 0;
-        [frontW, backW, totW].forEach(result => {
-          if (!result) return;
-          const wonTeam = result.winners.find(t => t.id === myTeam.id);
-          if (wonTeam) gross += result.prize / wonTeam.sz;
-        });
-        total += gross - stake;
-      }
-    }
-    return { name: p.name, total };
-  }).sort((a, b) => b.total - a.total);
-
-  const payoutSummaryHtml = payoutByPlayer.some(r => r.total !== 0) ? `
-    <div style="margin:14px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">💵 Payout Total — By Player</div>
-    <table class="result-table" style="margin-bottom:10px;"><tbody>
-      ${payoutByPlayer.map(r => `<tr>
-        <td>${r.name}</td>
-        <td style="color:${r.total > 0 ? '#6fcf97' : r.total < 0 ? '#f08080' : '#8FBFAA'};font-weight:700">${fmtSigned(r.total)}</td>
-      </tr>`).join('')}
-    </tbody></table>` : '';
-
   // ── Winner headline ──
   const indivWinStr = indivTie
-    ? `🤝 Indy tie — ${indivWinners.map(r => r.name.split(' ')[0]).join(' & ')}`
-    : `${withDelta[0].name} wins indy!`;
+    ? `🤝 Individual tie — ${indivWinners.map(r => r.name.split(' ')[0]).join(' & ')}`
+    : `${withDelta[0].name} wins individually!`;
   const headlineWinner = state.isTeamGame && state.teams?.length > 0
     ? teamWinnerLabel
     : withDelta[0].name;
@@ -2064,11 +1867,10 @@ function finishRound() {
     <div class="result-score">${state.date}</div>
     ${teamSection}
     ${teamPayoutHtml}
-    ${!state.isTeamGame ? `<div style="margin:14px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">🏌️ Indy Result</div>` : ''}
+    ${!state.isTeamGame ? `<div style="margin:14px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">🏌️ Individual Result</div>` : ''}
     <div style="margin-bottom:8px;font-size:14px;color:var(--gold-light);font-weight:700;">${indivWinStr}</div>
     <table class="result-table"><tbody>${indivRows}</tbody></table>
     ${indivPayoutHtml}
-    ${payoutSummaryHtml}
     <div style="margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
       <button class="btn btn-outline btn-sm" onclick="showScreen('profiles')" style="color:#fff;border-color:rgba(255,255,255,0.3)">View Profiles</button>
       <button class="btn btn-outline btn-sm" onclick="newRound()" style="color:#fff;border-color:rgba(255,255,255,0.3)">New Round</button>
@@ -2079,16 +1881,12 @@ function finishRound() {
 
 function goBackToSetup() {
   showConfirm('Go back to setup? Current scores will be lost.', () => {
-    deleteLiveRound();
-    unsubscribeLiveRound();
     showScreen('setup');
   });
 }
 
 function abandonRound() {
   showConfirm('Abandon this round? Scores will not be saved.', () => {
-    deleteLiveRound();
-    unsubscribeLiveRound();
     newRound();
   });
 }
@@ -2111,11 +1909,6 @@ syncFromSupabase().then(() => {
   renderProfiles();
   renderSetup();
 });
-
-// Live round: watch for rounds in progress elsewhere, and check on load
-// in case one was already running before this device opened the app.
-subscribeGlobalRoundWatcher();
-checkForLiveRoundOnLoad();
 </script>
 </body>
 </html>

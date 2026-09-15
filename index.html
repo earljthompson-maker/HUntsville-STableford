@@ -110,6 +110,7 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
   transition: filter 0.15s, transform 0.1s;
 }
 .btn:active { transform: scale(0.97); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; filter: none; transform: none; }
 .btn:hover { filter: brightness(1.08); }
 .btn-primary { background: var(--green-deep); color: #fff; }
 .btn-gold    { background: var(--gold); color: var(--ink); }
@@ -455,7 +456,7 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
     <div class="quota-bar-wrap" id="quota-bars"></div>
     <div style="height:76px;"></div>
     <div class="finish-round-bar">
-      <button class="btn btn-gold" style="width:100%;justify-content:center;font-size:16px;padding:14px;" onclick="finishRound()">🏆 Round Complete</button>
+      <button class="btn btn-gold" id="finish-round-btn" style="width:100%;justify-content:center;font-size:16px;padding:14px;" onclick="finishRound()">🏆 Round Complete</button>
     </div>
     <div id="result-banner"></div>
   </div>
@@ -1572,6 +1573,7 @@ function startRound() {
   manualTeams = [];
 
   isHostingLiveRound = true;
+  roundAlreadySaved  = false;
   pushLiveRound();
   clearCompletionReminder();
   if (window.Notification && Notification.permission === 'default') {
@@ -1581,6 +1583,8 @@ function startRound() {
   showScreen('scorecard');
   document.getElementById('result-banner').style.display = 'none';
   renderScorecard();
+  const btn = document.getElementById('finish-round-btn');
+  if (btn) { btn.disabled = false; btn.textContent = '🏆 Round Complete'; }
 }
 
 // ══════════════════════════════════════
@@ -1775,7 +1779,14 @@ function calcNewQuota(currentQuota, points) {
 // ══════════════════════════════════════
 // FINISH ROUND
 // ══════════════════════════════════════
+let roundAlreadySaved = false;
+
 function finishRound() {
+  if (roundAlreadySaved) return; // guard against double-save (double-tap, auto-save race, etc.)
+  roundAlreadySaved = true;
+  const btn = document.getElementById('finish-round-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '✅ Round Saved'; }
+
   const { players, quotaGame } = state;
   const ranked = players.map(p => ({ ...p, pts: totalPoints(p.id) }))
     .sort((a,b) => b.pts - a.pts);

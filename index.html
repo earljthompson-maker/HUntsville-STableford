@@ -47,6 +47,8 @@ body {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .nav-sync { flex-shrink: 0; }
+#refresh-btn { transition: transform 0.4s ease; }
+#refresh-btn:active { filter: brightness(1.3); }
 .nav-tabs {
   display: flex; align-items: stretch; flex-shrink: 0;
   overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
@@ -336,9 +338,11 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
 <!-- NAV -->
 <nav class="nav">
   <div class="nav-brand"><span class="flag">⛳</span><span class="title">Huntsville Stableford</span></div>
-  <div class="nav-sync" style="display:flex;align-items:center;margin-right:8px;">
+  <div class="nav-sync" style="display:flex;align-items:center;margin-right:6px;">
     <span id="sync-status" style="font-size:11px;color:var(--gold);white-space:nowrap;">⏳ Syncing...</span>
   </div>
+  <button id="refresh-btn" onclick="manualRefresh()" title="Refresh"
+    style="flex-shrink:0;margin-right:8px;background:rgba(255,255,255,0.12);border:none;color:#fff;width:30px;height:30px;border-radius:50%;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;">🔄</button>
   <div class="nav-tabs">
     <div class="nav-tab active" onclick="showScreen('profiles')" id="tab-profiles">👤 Profiles</div>
     <div class="nav-tab" onclick="showScreen('setup')" id="tab-setup">🏌️ New Round</div>
@@ -711,6 +715,19 @@ async function clearLiveRound() {
   isHostingLiveRound = false;
   clearTimeout(liveScorePushTimer);
   await sbDelete('live_round', 'current');
+}
+
+// Manual refresh — re-pulls profiles/history from Supabase (which only
+// otherwise sync once, on page load) and re-renders whatever's on screen,
+// plus an immediate live-round check.
+async function manualRefresh() {
+  const btn = document.getElementById('refresh-btn');
+  if (btn) btn.style.transform = 'rotate(360deg)';
+  await syncFromSupabase();
+  renderProfiles();
+  renderSetup();
+  await checkLiveRound();
+  if (btn) setTimeout(() => { btn.style.transform = ''; }, 400);
 }
 
 async function checkLiveRound() {

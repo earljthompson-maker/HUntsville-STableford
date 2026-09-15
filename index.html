@@ -346,6 +346,8 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
   </div>
 </nav>
 
+<div id="live-round-banner" style="display:none;"></div>
+
 <!-- ═══════════ PROFILES SCREEN ═══════════ -->
 <div id="screen-profiles" class="screen active">
   <div class="page">
@@ -682,6 +684,76 @@ function updateSyncStatus() {
 
 function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 
+// ══════════════════════════════════════
+// LIVE ROUND SYNC — lets other devices see a round while it's in
+// progress, not just after it's finished. The device running the
+// round is the "host": it pushes score changes (debounced) to a
+// single shared row. Every other device polls for that row while
+// sitting on the Profiles or New Round screen and shows a small
+// live banner. The row is deleted when the round finishes or is
+// abandoned, which clears the banner everywhere else.
+// ══════════════════════════════════════
+let isHostingLiveRound = false;
+let liveScorePushTimer = null;
+
+function pushLiveRound() {
+  if (!isHostingLiveRound) return;
+  sbUpsert('live_round', 'current', state);
+}
+
+function scheduleLiveRoundPush() {
+  if (!isHostingLiveRound) return;
+  clearTimeout(liveScorePushTimer);
+  liveScorePushTimer = setTimeout(pushLiveRound, 800);
+}
+
+async function clearLiveRound() {
+  isHostingLiveRound = false;
+  clearTimeout(liveScorePushTimer);
+  await sbDelete('live_round', 'current');
+}
+
+async function checkLiveRound() {
+  const banner = document.getElementById('live-round-banner');
+  if (!banner) return;
+  if (isHostingLiveRound || document.getElementById('screen-scorecard')?.classList.contains('active')) {
+    banner.style.display = 'none';
+    banner.innerHTML = '';
+    return;
+  }
+  const rows = await sbGet('live_round');
+  const live = rows && rows[0];
+  renderLiveRoundBanner(live || null);
+}
+
+function renderLiveRoundBanner(live) {
+  const banner = document.getElementById('live-round-banner');
+  if (!banner) return;
+  if (!live || !live.players || live.players.length === 0) {
+    banner.style.display = 'none';
+    banner.innerHTML = '';
+    return;
+  }
+  const ranked = live.players.map(p => {
+    const s = (live.scores && live.scores[p.id]) || {};
+    const f = parseInt(s.front) || 0;
+    const b = s.back != null ? (parseInt(s.back) || 0) : 0;
+    return { name: p.name, pts: f + b };
+  }).sort((a, b) => b.pts - a.pts);
+  const chips = ranked.map(p =>
+    `<span style="margin-right:12px;white-space:nowrap;"><strong>${p.name.split(' ')[0]}</strong> ${p.pts || '–'}</span>`
+  ).join('');
+  banner.style.display = 'block';
+  banner.innerHTML = `
+    <div class="page" style="padding-bottom:0;">
+      <div style="background:var(--green-deep);color:#fff;border-radius:6px;padding:10px 14px;font-size:12px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
+        <span style="color:var(--gold-light);font-weight:800;flex-shrink:0;">🔴 LIVE</span>
+        <span style="opacity:0.8;flex-shrink:0;">${live.date || ''} round in progress —</span>
+        <span style="display:flex;flex-wrap:wrap;overflow-x:auto;">${chips}</span>
+      </div>
+    </div>`;
+}
+
 const PLAYER_COLORS = ['#1B4D3E','#2563EB','#C0392B','#C9A84C','#6B3FA0','#0E7490'];
 function initials(name) { return name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2); }
 
@@ -737,6 +809,12 @@ function showScreen(id) {
   document.getElementById('tab-' + id).classList.add('active');
   if (id === 'profiles') renderProfiles();
   if (id === 'setup')    renderSetup();
+  if (id === 'scorecard') {
+    const banner = document.getElementById('live-round-banner');
+    if (banner) { banner.style.display = 'none'; banner.innerHTML = ''; }
+  } else {
+    checkLiveRound();
+  }
 }
 
 // ══════════════════════════════════════
@@ -1391,6 +1469,9 @@ function startRound() {
   state = { numHoles, hasFrontBack, players, date, quotaGame, scores, isTeamGame, teams, fmt, blindDraw };
   manualTeams = [];
 
+  isHostingLiveRound = true;
+  pushLiveRound();
+
   showScreen('scorecard');
   document.getElementById('result-banner').style.display = 'none';
   renderScorecard();
@@ -1409,6 +1490,7 @@ function totalPoints(pid) {
 function updateScore(pid, half, val) {
   state.scores[pid][half] = val === '' ? '' : parseInt(val);
   renderScorecard();
+  scheduleLiveRoundPush();
 }
 
 function teamTotal(team) {
@@ -1590,6 +1672,8 @@ function finishRound() {
   const { players, quotaGame } = state;
   const ranked = players.map(p => ({ ...p, pts: totalPoints(p.id) }))
     .sort((a,b) => b.pts - a.pts);
+
+  clearLiveRound();
 
   // Calculate new quotas and save them back to profiles
   // Performance adjustment is calculated against the round quota (tee-adjusted),
@@ -1959,12 +2043,14 @@ function finishRound() {
 
 function goBackToSetup() {
   showConfirm('Go back to setup? Current scores will be lost.', () => {
+    clearLiveRound();
     showScreen('setup');
   });
 }
 
 function abandonRound() {
   showConfirm('Abandon this round? Scores will not be saved.', () => {
+    clearLiveRound();
     newRound();
   });
 }
@@ -1987,6 +2073,10 @@ syncFromSupabase().then(() => {
   renderProfiles();
   renderSetup();
 });
+
+// Poll for a live round in progress on another device
+checkLiveRound();
+setInterval(checkLiveRound, 6000);
 </script>
 </body>
 </html>

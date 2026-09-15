@@ -2035,9 +2035,20 @@ function finishRound() {
       return { winners, tie, pot, prize, key };
     };
 
-    const frontW = segmentWinner('frontDelta', frontStake * (numTeams - 1));
-    const backW  = state.hasFrontBack ? segmentWinner('backDelta', backStake * (numTeams - 1)) : null;
-    const totW   = segmentWinner('totalDelta', totalStake * (numTeams - 1));
+    // With exactly 2 teams, there's no separate front/back contest —
+    // the whole $20/player team stake (front+back+total combined) rides
+    // on the Total variance alone. With 3+ teams, front/back/total are
+    // each contested and paid out separately as usual.
+    let frontW, backW, totW;
+    if (numTeams === 2) {
+      frontW = null;
+      backW  = null;
+      totW   = segmentWinner('totalDelta', teamStake * (numTeams - 1));
+    } else {
+      frontW = segmentWinner('frontDelta', frontStake * (numTeams - 1));
+      backW  = state.hasFrontBack ? segmentWinner('backDelta', backStake * (numTeams - 1)) : null;
+      totW   = segmentWinner('totalDelta', totalStake * (numTeams - 1));
+    }
 
     // Credit each winning segment's prize, split evenly among that team's
     // players, to a running per-player total for the Money Recap.

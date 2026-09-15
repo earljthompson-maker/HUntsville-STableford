@@ -455,7 +455,7 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
     <div class="quota-bar-wrap" id="quota-bars"></div>
     <div style="height:76px;"></div>
     <div class="finish-round-bar">
-      <button class="btn btn-gold" style="width:100%;justify-content:center;font-size:16px;padding:14px;" onclick="finishRound()">🏆 Complete Round and Save</button>
+      <button class="btn btn-gold" style="width:100%;justify-content:center;font-size:16px;padding:14px;" onclick="finishRound()">🏆 Round Complete</button>
     </div>
     <div id="result-banner"></div>
   </div>
@@ -699,6 +699,91 @@ function genId() { return Date.now().toString(36) + Math.random().toString(36).s
 // ══════════════════════════════════════
 let isHostingLiveRound = false;
 let liveScorePushTimer = null;
+
+// ══════════════════════════════════════
+// COMPLETION REMINDER + AUTO-SAVE — once every player has a score
+// entered: remind the host at 5 minutes, then auto-save the round at
+// 30 minutes if it still hasn't been saved. Auto-save only ever fires
+// when every score is already complete, so it never records a 0 for
+// someone who hasn't finished — it just does what the host would do
+// anyway by tapping the button. Only works while this browser tab
+// stays open (no backend push/cron exists here — that would need real
+// server-side infrastructure this static site doesn't have).
+// ══════════════════════════════════════
+let allScoresTimer = null;
+let autoSaveTimer = null;
+let allScoresTimerStarted = false;
+
+function allScoresEntered() {
+  if (!state.players || state.players.length === 0) return false;
+  return state.players.every(p => {
+    const s = state.scores[p.id];
+    if (!s) return false;
+    const frontOk = s.front !== '' && s.front != null;
+    const backOk  = !state.hasFrontBack || (s.back !== '' && s.back != null);
+    return frontOk && backOk;
+  });
+}
+
+function checkRoundCompletionReminder() {
+  if (allScoresEntered()) {
+    if (!allScoresTimerStarted) {
+      allScoresTimerStarted = true;
+      clearTimeout(allScoresTimer);
+      clearTimeout(autoSaveTimer);
+      allScoresTimer = setTimeout(fireCompletionReminder, 5 * 60 * 1000);
+      autoSaveTimer  = setTimeout(autoSaveRound, 30 * 60 * 1000);
+    }
+  } else {
+    allScoresTimerStarted = false;
+    clearTimeout(allScoresTimer);
+    clearTimeout(autoSaveTimer);
+    dismissReminderBanner();
+  }
+}
+
+function clearCompletionReminder() {
+  allScoresTimerStarted = false;
+  clearTimeout(allScoresTimer);
+  clearTimeout(autoSaveTimer);
+  dismissReminderBanner();
+}
+
+function autoSaveRound() {
+  if (!isHostingLiveRound) return;
+  if (!document.getElementById('screen-scorecard')?.classList.contains('active')) return;
+  if (!allScoresEntered()) return; // safety check — never auto-save incomplete scores
+  finishRound();
+  showReminderBanner('✅ Round auto-saved after 30 minutes — no action needed.');
+}
+
+function fireCompletionReminder() {
+  if (!isHostingLiveRound) return;
+  if (!document.getElementById('screen-scorecard')?.classList.contains('active')) return;
+  const msg = 'All scores are in — tap "Round Complete" to save this round.';
+  if (window.Notification && Notification.permission === 'granted') {
+    try { new Notification('Stableford round ready to save', { body: msg }); } catch(e) {}
+  }
+  showReminderBanner(msg);
+}
+
+function showReminderBanner(msg) {
+  let el = document.getElementById('completion-reminder');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'completion-reminder';
+    el.style.cssText = 'position:fixed;top:60px;left:0;right:0;z-index:60;max-width:680px;margin:0 auto;padding:0 16px;';
+    document.body.appendChild(el);
+  }
+  el.innerHTML = `<div style="background:var(--gold);color:var(--ink);border-radius:6px;padding:10px 14px;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 2px 10px rgba(0,0,0,0.2);">
+    <span>⏰ ${msg}</span>
+    <button onclick="dismissReminderBanner()" style="background:none;border:none;font-size:16px;cursor:pointer;color:var(--ink);line-height:1;">×</button>
+  </div>`;
+}
+
+function dismissReminderBanner() {
+  document.getElementById('completion-reminder')?.remove();
+}
 
 function pushLiveRound() {
   if (!isHostingLiveRound) return;
@@ -1488,6 +1573,10 @@ function startRound() {
 
   isHostingLiveRound = true;
   pushLiveRound();
+  clearCompletionReminder();
+  if (window.Notification && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
 
   showScreen('scorecard');
   document.getElementById('result-banner').style.display = 'none';
@@ -1508,6 +1597,7 @@ function updateScore(pid, half, val) {
   state.scores[pid][half] = val === '' ? '' : parseInt(val);
   renderScorecard();
   scheduleLiveRoundPush();
+  checkRoundCompletionReminder();
 }
 
 function teamTotal(team) {
@@ -1691,6 +1781,7 @@ function finishRound() {
     .sort((a,b) => b.pts - a.pts);
 
   clearLiveRound();
+  clearCompletionReminder();
 
   // Calculate new quotas and save them back to profiles
   // Performance adjustment is calculated against the round quota (tee-adjusted),
@@ -2061,6 +2152,7 @@ function finishRound() {
 function goBackToSetup() {
   showConfirm('Go back to setup? Current scores will be lost.', () => {
     clearLiveRound();
+    clearCompletionReminder();
     showScreen('setup');
   });
 }
@@ -2068,6 +2160,7 @@ function goBackToSetup() {
 function abandonRound() {
   showConfirm('Abandon this round? Scores will not be saved.', () => {
     clearLiveRound();
+    clearCompletionReminder();
     newRound();
   });
 }

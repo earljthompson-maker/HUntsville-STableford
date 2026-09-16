@@ -37,7 +37,8 @@ body {
 .nav-brand { display: flex; align-items: center; gap: 9px; margin-right: 20px; flex-shrink: 0; }
 .nav-brand .flag { font-size: 22px; }
 .nav-brand .title { font-size: 16px; font-weight: 700; letter-spacing: -0.2px; }
-.nav-tabs { display: flex; align-items: stretch; }
+.nav-tabs { display: flex; align-items: stretch; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.nav-tabs::-webkit-scrollbar { display: none; }
 .nav-tab {
   display: flex; align-items: center; gap: 6px;
   padding: 0 16px; font-size: 13px; font-weight: 600;
@@ -286,6 +287,12 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
   .form-row.col3 { grid-template-columns: 1fr 1fr; }
   .score-input { width: 64px; font-size: 22px; }
   .lb-pts { font-size: 20px; }
+  .nav { padding: 0 8px; }
+  .nav-brand { gap: 5px; margin-right: 8px; }
+  .nav-brand .title { display: none; }
+  #sync-status { font-size: 0 !important; }
+  #sync-status::before { content: '●'; font-size: 14px; }
+  .nav-tab { padding: 0 10px; font-size: 12px; gap: 4px; }
 }
 </style>
 </head>

@@ -1762,17 +1762,15 @@ function renderQuotaBars() {
 
 // ══════════════════════════════════════
 // QUOTA ADJUSTMENT
-// 50% of diff, max +2, max -1, rounded to whole number
+// 50% of diff, max +2, max -1, rounded to whole number (0.5 rounds
+// away from zero in both directions — JS's Math.round(-0.5) gives -0,
+// not -1, so magnitude is rounded first and the sign applied after).
 // ══════════════════════════════════════
 function calcNewQuota(currentQuota, points) {
   const diff = points - currentQuota;
   if (diff === 0) return currentQuota;
-  let change;
-  if (diff > 0) {
-    change = Math.min(2, Math.round(diff * 0.5));
-  } else {
-    change = Math.max(-1, Math.round(diff * 0.5));
-  }
+  const magnitude = Math.round(Math.abs(diff) * 0.5);
+  const change = diff > 0 ? Math.min(2, magnitude) : -Math.min(1, magnitude);
   return currentQuota + change;
 }
 

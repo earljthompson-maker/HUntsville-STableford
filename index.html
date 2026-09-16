@@ -91,6 +91,7 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 .btn-gold    { background: var(--gold); color: var(--ink); }
 .btn-outline { background: transparent; border: 1px solid var(--rule); color: var(--ink-soft); }
 .btn-danger  { background: var(--red); color: #fff; }
+.btn-texted  { background: #E0E0E0 !important; color: #888 !important; }
 .btn-sm { padding: 6px 12px; font-size: 12px; }
 .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 
@@ -1617,7 +1618,7 @@ function openNotifyModal() {
         <div style="font-size:11px;color:var(--ink-soft);">${hasCell ? p.cell : 'No cell number on file'}</div>
       </div>
       ${hasCell
-        ? `<a class="btn btn-primary btn-sm" href="${smsLink(p.cell, msg)}">📱 Text</a>`
+        ? `<a class="btn btn-primary btn-sm" data-pid="${p.id}" href="${smsLink(p.cell, msg)}" onclick="markTexted(this)">📱 Text</a>`
         : `<button class="btn btn-outline btn-sm" disabled style="opacity:0.5;cursor:not-allowed;">📱 Text</button>`}
     </div>`;
   }).join('');
@@ -1628,6 +1629,13 @@ function openNotifyModal() {
 
 function closeNotifyModal() {
   document.getElementById('notify-modal').classList.remove('open');
+}
+
+// Grey out a Text button once tapped so it's clear who's already been sent
+// the message. Still tappable again (e.g. to resend) — just visually marked.
+function markTexted(el) {
+  el.classList.add('btn-texted');
+  el.textContent = '✓ Sent';
 }
 
 function copyPairingsMessage() {
@@ -1643,10 +1651,8 @@ function copyPairingsMessage() {
 document.addEventListener('input', (e) => {
   if (e.target && e.target.id === 'notify-message') {
     const msg = e.target.value;
-    document.querySelectorAll('#notify-recipients a.btn-primary').forEach(a => {
-      const idx = [...document.querySelectorAll('#notify-recipients a.btn-primary')].indexOf(a);
-      const withCell = state.players.filter(p => p.cell);
-      const p = withCell[idx];
+    document.querySelectorAll('#notify-recipients a[data-pid]').forEach(a => {
+      const p = state.players.find(x => x.id === a.dataset.pid);
       if (p) a.href = smsLink(p.cell, msg);
     });
   }

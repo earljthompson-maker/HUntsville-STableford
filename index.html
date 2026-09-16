@@ -429,7 +429,7 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
     </div>
     <div class="quota-bar-wrap" id="quota-bars"></div>
     <div style="padding:16px 0;">
-      <button class="btn btn-gold" style="width:100%;justify-content:center;font-size:16px;padding:14px;" onclick="finishRound()">🏆 Finish Round</button>
+      <button id="finish-round-btn" class="btn btn-gold" style="width:100%;justify-content:center;font-size:16px;padding:14px;" onclick="finishRound()">🏆 Finish Round</button>
     </div>
     <div id="result-banner"></div>
   </div>
@@ -484,7 +484,7 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
       <input type="hidden" id="edit-pid">
       <div class="form-row col2">
         <div><label>Name</label><input type="text" id="m-name" placeholder="Full name"></div>
-        <div><label>Quota</label><input type="number" id="m-quota" placeholder="e.g. 22" min="0" max="72"></div>
+        <div><label>Quota</label><input type="number" id="m-quota" placeholder="e.g. 22" min="0" max="72" step="1"></div>
       </div>
       <div class="form-row col2" style="margin-bottom:14px;">
         <div>
@@ -1404,6 +1404,7 @@ function startRound() {
 
   showScreen('scorecard');
   document.getElementById('result-banner').style.display = 'none';
+  document.getElementById('finish-round-btn').style.display = '';
   renderScorecard();
 }
 
@@ -1733,7 +1734,15 @@ document.addEventListener('input', (e) => {
 
 // ══════════════════════════════════════
 // QUOTA ADJUSTMENT
-// 50% of diff, max +2, max -1, rounded to whole number
+// 50% of diff, capped at +2 / -1. Missing quota is NOT rounded to the
+// nearest whole number — missing by 1 point is a genuine -0.5 change,
+// not a wash. Beating quota still rounds to a whole-point gain.
+// ══════════════════════════════════════
+// ══════════════════════════════════════
+// QUOTA ADJUSTMENT
+// 50% of diff, capped at +2 / -1, always a whole number. Missing quota
+// rounds DOWN (away from zero) rather than to nearest, so missing by
+// just 1 point still costs a full point — it never rounds away to 0.
 // ══════════════════════════════════════
 function calcNewQuota(currentQuota, points) {
   const diff = points - currentQuota;
@@ -1742,7 +1751,7 @@ function calcNewQuota(currentQuota, points) {
   if (diff > 0) {
     change = Math.min(2, Math.round(diff * 0.5));
   } else {
-    change = Math.max(-1, Math.round(diff * 0.5));
+    change = Math.max(-1, Math.floor(diff * 0.5));
   }
   return currentQuota + change;
 }
@@ -1751,6 +1760,10 @@ function calcNewQuota(currentQuota, points) {
 // FINISH ROUND
 // ══════════════════════════════════════
 function finishRound() {
+  if (state.finished) return; // already recorded — ignore repeat clicks
+  state.finished = true;
+  document.getElementById('finish-round-btn').style.display = 'none';
+
   const { players, quotaGame } = state;
   const ranked = players.map(p => ({ ...p, pts: totalPoints(p.id) }))
     .sort((a,b) => b.pts - a.pts);
@@ -1936,11 +1949,18 @@ function finishRound() {
   if (state.isTeamGame && state.teams && state.teams.length > 0) {
     const teamSizes   = state.teams.map(t => t.playerIds.length);
     const largestSz   = Math.max(...teamSizes);
-    // Full stake per team per segment (based on largest team)
-    const frontStake  = largestSz * 10;  // e.g. 4 players × $10 = $40
-    const backStake   = largestSz * 10;
-    const totalStake  = largestSz * 10;
-    const fullStake   = frontStake + backStake + totalStake; // $30/player on the largest team
+    const numTeams    = state.teams.length;
+    // Head-to-head (exactly 2 teams): only the Total variance decides the
+    // winner — Front/Back are not scored separately, and the whole pot
+    // rides on Total. With 3+ teams, the pot splits into three segments
+    // (Front $5, Back $5, Total $10 per player) so each nine — and the
+    // overall round — has its own winner. Either way the full team stake
+    // is $20/player on the largest team.
+    const twoTeamGame = numTeams === 2;
+    const frontStake  = twoTeamGame ? 0 : largestSz * 5;
+    const backStake   = twoTeamGame ? 0 : largestSz * 5;
+    const totalStake  = twoTeamGame ? largestSz * 20 : largestSz * 10;
+    const fullStake   = frontStake + backStake + totalStake; // always $20/player on the largest team
 
     // Per-player costs for each team
     const teamPlayerCosts = state.teams.map(t => {
@@ -1989,8 +2009,6 @@ function finishRound() {
         members: cost.members, perPlayer: cost.perPlayer, extra: cost.extra, sz };
     });
 
-    const numTeams = teamsWithSegments.length;
-
     // Segment winner: pot = frontStake × (numTeams - 1) etc.
     const segmentWinner = (key, pot) => {
       const sorted  = [...teamsWithSegments].sort((a,b) => b[key] - a[key]);
@@ -2001,8 +2019,9 @@ function finishRound() {
       return { winners, tie, pot, prize, key };
     };
 
-    const frontW = segmentWinner('frontDelta', frontStake * (numTeams - 1));
-    const backW  = state.hasFrontBack ? segmentWinner('backDelta', backStake * (numTeams - 1)) : null;
+    // Head-to-head games skip Front/Back entirely — only Total is scored.
+    const frontW = twoTeamGame ? null : segmentWinner('frontDelta', frontStake * (numTeams - 1));
+    const backW  = (!twoTeamGame && state.hasFrontBack) ? segmentWinner('backDelta', backStake * (numTeams - 1)) : null;
     const totW   = segmentWinner('totalDelta', totalStake * (numTeams - 1));
 
     // Give each player on a winning team their equal share of whatever
@@ -2047,7 +2066,7 @@ function finishRound() {
         <tbody>
           ${segRow('Front 9', frontW)}
           ${segRow('Back 9', backW)}
-          ${segRow('Total', totW)}
+          ${segRow(twoTeamGame ? 'Team Pot' : 'Total', totW)}
         </tbody>
       </table></div>
       <div style="margin:8px 0 4px;font-size:10px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">Player Stakes</div>

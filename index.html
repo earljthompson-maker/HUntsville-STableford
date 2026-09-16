@@ -994,12 +994,7 @@ function renderProfiles() {
   noP.style.display = 'none';
 
   const history = loadHistory();
-  const sortedProfiles = [...profiles].sort((a, b) => {
-    const aRounds = history.filter(r => r.players.some(rp => rp.id === a.id)).length;
-    const bRounds = history.filter(r => r.players.some(rp => rp.id === b.id)).length;
-    if (bRounds !== aRounds) return bRounds - aRounds;
-    return a.name.localeCompare(b.name);
-  });
+  const sortedProfiles = [...profiles].sort((a, b) => a.name.localeCompare(b.name));
   grid.innerHTML = sortedProfiles.map((p) => {
     const idx      = profiles.indexOf(p);
     const color    = PLAYER_COLORS[idx % PLAYER_COLORS.length];
@@ -1253,13 +1248,7 @@ function renderSetup() {
 
   document.getElementById('player-panel-head').textContent = `Select Players${setupSelected.length > 0 ? ' — ' + setupSelected.length + ' selected' : ''}`;
 
-  const historyForSort = loadHistory();
-  const sortedForPicker = [...profiles].sort((a, b) => {
-    const aR = historyForSort.filter(r => r.players.some(rp => rp.id === a.id)).length;
-    const bR = historyForSort.filter(r => r.players.some(rp => rp.id === b.id)).length;
-    if (bR !== aR) return bR - aR;
-    return a.name.localeCompare(b.name);
-  });
+  const sortedForPicker = [...profiles].sort((a, b) => a.name.localeCompare(b.name));
   picker.innerHTML = sortedForPicker.map((p) => {
     const idx   = profiles.indexOf(p);
     const color = PLAYER_COLORS[idx % PLAYER_COLORS.length];

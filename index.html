@@ -373,6 +373,16 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
             </select>
             <div id="team-format-note" style="font-size:12px;color:var(--ink-soft);margin-top:5px;"></div>
           </div>
+          <div style="margin-bottom:14px;">
+            <label>Rules for the Day</label>
+            <select id="rules-for-day">
+              <option value="Down">Down</option>
+              <option value="Up in Fairway only">Up in Fairway only</option>
+              <option value="Up in Fairways and Bunkers">Up in Fairways and Bunkers</option>
+              <option value="Up In Bunkers only">Up In Bunkers only</option>
+              <option value="Up Everywhere">Up Everywhere</option>
+            </select>
+          </div>
           <div class="btn-row"><button class="btn btn-gold" style="width:100%;justify-content:center;font-size:16px;padding:14px;" onclick="startRound()">▶ Start Round</button></div>
         </div>
       </div>
@@ -1343,6 +1353,7 @@ function startRound() {
   const cfgSizes   = selectedConfig(); // array of team sizes e.g. [2,2] or [3,4]
   const isTeamGame = cfgSizes && cfgSizes.length > 1;
   const fmt        = 'teams';
+  const rulesForDay = document.getElementById('rules-for-day').value;
 
   const profiles = loadProfiles();
   const players  = setupSelected.map(pid => {
@@ -1386,7 +1397,7 @@ function startRound() {
 
   const assignMethod = document.getElementById('team-assign').value;
   const blindDraw = assignMethod === 'blind';
-  state = { numHoles, hasFrontBack, players, date, quotaGame, scores, isTeamGame, teams, fmt, blindDraw };
+  state = { numHoles, hasFrontBack, players, date, quotaGame, scores, isTeamGame, teams, fmt, blindDraw, rulesForDay };
   manualTeams = [];
 
   showScreen('scorecard');
@@ -1416,7 +1427,7 @@ function teamTotal(team) {
 function renderScorecard() {
   const { players, quotaGame, hasFrontBack, isTeamGame, teams } = state;
   document.getElementById('sc-title').textContent = 'Scorecard';
-  document.getElementById('sc-meta').textContent  = state.date + (quotaGame ? ' · Quota game' : '') + (isTeamGame ? ' · ' + state.fmt : '');
+  document.getElementById('sc-meta').textContent  = state.date + (quotaGame ? ' · Quota game' : '') + (isTeamGame ? ' · ' + state.fmt : '') + (state.rulesForDay ? ' · ' + state.rulesForDay : '');
 
   // Team scores panel
   const teamPanel = document.getElementById('team-scores-panel');
@@ -1569,8 +1580,9 @@ function renderQuotaBars() {
 // TEXT PAIRINGS
 // ══════════════════════════════════════
 function buildPairingsMessage() {
-  const { date, isTeamGame, teams, players, blindDraw } = state;
+  const { date, isTeamGame, teams, players, blindDraw, rulesForDay } = state;
   const lines = [`⛳ Huntsville Stableford – ${date}`];
+  if (rulesForDay) lines.push(`Rules for the day: ${rulesForDay}`);
 
   if (isTeamGame && teams && teams.length > 0 && !blindDraw) {
     lines.push(`Format: ${teams.length} teams (${teams.map(t=>t.playerIds.length).join('/')} players) · Stableford quota game`);

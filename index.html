@@ -299,7 +299,7 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
   </div>
   <div class="nav-tabs">
     <div class="nav-tab active" onclick="showScreen('profiles')" id="tab-profiles">👤 Profiles</div>
-    <div class="nav-tab" onclick="showScreen('setup')" id="tab-setup">🏌️ New Round</div>
+    <div class="nav-tab" onclick="showScreen('setup')" id="tab-setup">🏌️ New Game</div>
     <div class="nav-tab" onclick="showScreen('scorecard')" id="tab-scorecard">📋 Scorecard</div>
   </div>
 </nav>
@@ -334,7 +334,7 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
 <!-- ═══════════ SETUP SCREEN ═══════════ -->
 <div id="screen-setup" class="screen">
   <div class="page">
-    <div class="section-head"><span class="section-title">New Round</span></div>
+    <div class="section-head"><span class="section-title">New Game</span></div>
     <div class="panel">
       <div class="panel-head">Round Format</div>
       <div class="panel-body">
@@ -365,7 +365,7 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
             </select>
             <div id="team-format-note" style="font-size:12px;color:var(--ink-soft);margin-top:5px;"></div>
           </div>
-          <div class="btn-row"><button class="btn btn-gold" onclick="startRound()">▶ Start Round</button></div>
+          <div class="btn-row"><button class="btn btn-gold" style="width:100%;justify-content:center;font-size:16px;padding:14px;" onclick="startRound()">▶ Start Round</button></div>
         </div>
       </div>
     </div>
@@ -387,10 +387,12 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
         <div style="font-size:12px;color:var(--ink-soft)" id="sc-meta"></div>
       </div>
       <div class="btn-row">
-        <button class="btn btn-gold btn-sm" onclick="openNotifyModal()">📱 Text Pairings</button>
         <button class="btn btn-outline btn-sm" onclick="goBackToSetup()">← Back</button>
         <button class="btn btn-danger btn-sm" onclick="abandonRound()">✕ Abandon</button>
       </div>
+    </div>
+    <div class="btn-row" style="margin-bottom:14px;">
+      <button class="btn btn-gold btn-sm" onclick="openNotifyModal()">📱 Text Pairings</button>
     </div>
     <div class="leaderboard" id="leaderboard"></div>
     <div class="panel" id="team-scores-panel" style="display:none;">
@@ -1994,7 +1996,7 @@ function finishRound() {
     ${indivPayoutHtml}
     <div style="margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
       <button class="btn btn-outline btn-sm" onclick="showScreen('profiles')" style="color:#fff;border-color:rgba(255,255,255,0.3)">View Profiles</button>
-      <button class="btn btn-outline btn-sm" onclick="newRound()" style="color:#fff;border-color:rgba(255,255,255,0.3)">New Round</button>
+      <button class="btn btn-outline btn-sm" onclick="newRound()" style="color:#fff;border-color:rgba(255,255,255,0.3)">New Game</button>
     </div>`;
 
   banner.scrollIntoView({ behavior: 'smooth' });

@@ -22,11 +22,6 @@
   --blue:       #2563EB;
 }
 
-html, body {
-  overflow-x: hidden;
-  max-width: 100%;
-}
-
 body {
   font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
   background: var(--fairway);
@@ -37,40 +32,21 @@ body {
 /* ── NAV ── */
 .nav {
   background: var(--green-deep); color: var(--white);
-  padding: 0 12px; display: flex; align-items: stretch; height: 54px;
-  overflow: hidden;
+  padding: 0 20px; display: flex; align-items: stretch; height: 54px;
 }
-.nav-brand { display: flex; align-items: center; gap: 7px; margin-right: 10px; flex-shrink: 1; min-width: 0; overflow: hidden; }
-.nav-brand .flag { font-size: 20px; flex-shrink: 0; }
-.nav-brand .title {
-  font-size: 15px; font-weight: 700; letter-spacing: -0.2px;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.nav-sync { flex-shrink: 0; }
-#refresh-btn { transition: transform 0.4s ease; }
-#refresh-btn:active { filter: brightness(1.3); }
-.nav-tabs {
-  display: flex; align-items: stretch; flex-shrink: 0;
-  overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
-}
-.nav-tabs::-webkit-scrollbar { display: none; }
+.nav-brand { display: flex; align-items: center; gap: 9px; margin-right: 20px; flex-shrink: 0; }
+.nav-brand .flag { font-size: 22px; }
+.nav-brand .title { font-size: 16px; font-weight: 700; letter-spacing: -0.2px; }
+.nav-tabs { display: flex; align-items: stretch; }
 .nav-tab {
-  display: flex; align-items: center; gap: 5px;
-  padding: 0 12px; font-size: 12px; font-weight: 600;
+  display: flex; align-items: center; gap: 6px;
+  padding: 0 16px; font-size: 13px; font-weight: 600;
   color: rgba(255,255,255,0.55); cursor: pointer;
-  border-bottom: 3px solid transparent; flex-shrink: 0;
+  border-bottom: 3px solid transparent;
   transition: color 0.15s, border-color 0.15s; white-space: nowrap;
 }
 .nav-tab:hover { color: rgba(255,255,255,0.85); }
 .nav-tab.active { color: var(--white); border-bottom-color: var(--gold); }
-
-@media (max-width: 480px) {
-  .nav { padding: 0 8px; }
-  .nav-brand { margin-right: 6px; }
-  .nav-brand .title { font-size: 12px; max-width: 78px; }
-  .nav-sync { display: none; }
-  .nav-tab { padding: 0 9px; font-size: 11px; gap: 3px; }
-}
 
 /* ── SCREENS ── */
 .screen { display: none; }
@@ -78,7 +54,6 @@ body {
 
 /* ── SHARED ── */
 .page { max-width: 680px; margin: 0 auto; padding: 20px 16px; }
-#screen-setup .page { max-width: 480px; }
 .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
 .section-title { font-size: 15px; font-weight: 700; color: var(--green-deep); }
 
@@ -110,7 +85,6 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
   transition: filter 0.15s, transform 0.1s;
 }
 .btn:active { transform: scale(0.97); }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; filter: none; transform: none; }
 .btn:hover { filter: brightness(1.08); }
 .btn-primary { background: var(--green-deep); color: #fff; }
 .btn-gold    { background: var(--gold); color: var(--ink); }
@@ -203,7 +177,7 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 
 /* ── SETUP ── */
 .player-pick-row {
-  display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center;
+  display: flex; gap: 8px; align-items: center;
   padding: 10px 0; border-bottom: 1px solid #F0EDE6;
 }
 .player-pick-row:last-child { border-bottom: none; }
@@ -212,17 +186,9 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
   display: flex; align-items: center; justify-content: center;
   font-size: 13px; font-weight: 800; color: #fff; flex-shrink: 0;
 }
-.pick-name { font-size: 15px; font-weight: 800; }
+.pick-name { font-size: 14px; font-weight: 600; }
 .pick-meta { font-size: 11px; color: var(--ink-soft); }
-.pick-quota { font-size: 12px; font-weight: 700; color: var(--green-deep); background: #F0EDE6; padding: 3px 8px; border-radius: 3px; white-space: nowrap; flex-shrink: 0; }
-.pick-info-line {
-  flex: 1 1 100%; min-width: 0; order: 3;
-  font-size: 11px; color: var(--ink-soft);
-  display: flex; align-items: center; flex-wrap: wrap; gap: 4px 6px;
-  padding-left: 40px; margin-top: 2px;
-}
-.pick-main-row { display: flex; align-items: center; gap: 10px; flex: 1 1 auto; min-width: 0; order: 1; }
-.pick-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; order: 2; margin-left: auto; }
+.pick-quota { font-size: 12px; font-weight: 700; color: var(--green-deep); background: #F0EDE6; padding: 3px 8px; border-radius: 3px; white-space: nowrap; }
 
 /* ── SCORECARD ── */
 .leaderboard {
@@ -285,22 +251,11 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
 .legend-dot { width: 20px; height: 20px; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; }
 
 #result-banner { display: none; background: var(--green-deep); color: var(--white); border-radius: 6px; padding: 20px; margin-top: 16px; text-align: center; }
-
-.finish-round-bar {
-  position: fixed; left: 0; right: 0; bottom: 0;
-  background: var(--fairway);
-  border-top: 1px solid var(--rule);
-  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
-  z-index: 50;
-  max-width: 680px; margin: 0 auto;
-  box-shadow: 0 -2px 10px rgba(0,0,0,0.08);
-}
 .result-crown { font-size: 30px; margin-bottom: 4px; }
 .result-winner { font-size: 20px; font-weight: 800; color: var(--gold-light); }
 .result-score { font-size: 13px; color: #8FBFAA; margin-top: 3px; }
-.result-table { width: 100%; margin-top: 14px; border-collapse: collapse; background: transparent; }
-.result-table td { padding: 7px 8px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: left; color: var(--white); overflow-wrap: break-word; }
-.result-table td:first-child { font-weight: 700; }
+.result-table { width: 100%; margin-top: 14px; border-collapse: collapse; }
+.result-table td { padding: 7px 8px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: left; }
 .result-table td:last-child { text-align: right; }
 .result-table tr:last-child td { border-bottom: none; }
 
@@ -339,19 +294,15 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
 <!-- NAV -->
 <nav class="nav">
   <div class="nav-brand"><span class="flag">⛳</span><span class="title">Huntsville Stableford</span></div>
-  <div class="nav-sync" style="display:flex;align-items:center;margin-right:6px;">
-    <span id="sync-status" style="font-size:11px;color:var(--gold);white-space:nowrap;">⏳ Syncing...</span>
+  <div style="flex:1;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;">
+    <span id="sync-status" style="font-size:11px;color:var(--gold);">⏳ Syncing...</span>
   </div>
-  <button id="refresh-btn" onclick="manualRefresh()" title="Refresh"
-    style="flex-shrink:0;margin-right:8px;background:rgba(255,255,255,0.12);border:none;color:#fff;width:30px;height:30px;border-radius:50%;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;">🔄</button>
   <div class="nav-tabs">
     <div class="nav-tab active" onclick="showScreen('profiles')" id="tab-profiles">👤 Profiles</div>
     <div class="nav-tab" onclick="showScreen('setup')" id="tab-setup">🏌️ New Round</div>
     <div class="nav-tab" onclick="showScreen('scorecard')" id="tab-scorecard">📋 Scorecard</div>
   </div>
 </nav>
-
-<div id="live-round-banner" style="display:none;"></div>
 
 <!-- ═══════════ PROFILES SCREEN ═══════════ -->
 <div id="screen-profiles" class="screen active">
@@ -436,6 +387,7 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
         <div style="font-size:12px;color:var(--ink-soft)" id="sc-meta"></div>
       </div>
       <div class="btn-row">
+        <button class="btn btn-gold btn-sm" onclick="openNotifyModal()">📱 Text Pairings</button>
         <button class="btn btn-outline btn-sm" onclick="goBackToSetup()">← Back</button>
         <button class="btn btn-danger btn-sm" onclick="abandonRound()">✕ Abandon</button>
       </div>
@@ -454,9 +406,8 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
       </div>
     </div>
     <div class="quota-bar-wrap" id="quota-bars"></div>
-    <div style="height:76px;"></div>
-    <div class="finish-round-bar">
-      <button class="btn btn-gold" id="finish-round-btn" style="width:100%;justify-content:center;font-size:16px;padding:14px;" onclick="finishRound()">🏆 Round Complete</button>
+    <div style="padding:16px 0;">
+      <button class="btn btn-gold" style="width:100%;justify-content:center;font-size:16px;padding:14px;" onclick="finishRound()">🏆 Finish Round</button>
     </div>
     <div id="result-banner"></div>
   </div>
@@ -523,6 +474,10 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
             <option value="White" selected>⚪ White</option>
           </select>
         </div>
+        <div>
+          <label>Cell Number</label>
+          <input type="text" id="m-cell" placeholder="555-123-4567">
+        </div>
       </div>
       <div class="team-explainer">
         <strong>Team Number</strong> is calculated automatically from the last 7 rounds — taking 5 middle scores (dropping the highest and lowest) and averaging them. It updates after each finished round. A player needs at least 3 rounds to get a team number.
@@ -532,6 +487,30 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
     <div class="modal-foot">
       <button class="btn btn-outline btn-sm" onclick="closeProfileModal()">Cancel</button>
       <button class="btn btn-primary btn-sm" onclick="saveProfile()">Save Player</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ NOTIFY (TEXT PAIRINGS) MODAL ═══════════ -->
+<div class="modal-overlay" id="notify-modal">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-head">
+      <span>Text Pairings</span>
+      <button class="close-btn" onclick="closeNotifyModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <label>Message Preview (editable)</label>
+      <textarea id="notify-message" rows="8" style="width:100%;padding:8px 10px;border:1px solid var(--rule);border-radius:4px;font-size:12px;font-family:inherit;color:var(--ink);background:var(--fairway);outline:none;resize:vertical;"></textarea>
+      <div class="btn-row" style="margin-top:8px;">
+        <button class="btn btn-outline btn-sm" onclick="copyPairingsMessage()">📋 Copy Message</button>
+      </div>
+      <div style="border-top:1px solid var(--rule);margin-top:14px;padding-top:12px;">
+        <label style="margin-bottom:8px;">Send To</label>
+        <div id="notify-recipients"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline btn-sm" onclick="closeNotifyModal()">Close</button>
     </div>
   </div>
 </div>
@@ -689,174 +668,6 @@ function updateSyncStatus() {
 
 function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 
-// ══════════════════════════════════════
-// LIVE ROUND SYNC — lets other devices see a round while it's in
-// progress, not just after it's finished. The device running the
-// round is the "host": it pushes score changes (debounced) to a
-// single shared row. Every other device polls for that row while
-// sitting on the Profiles or New Round screen and shows a small
-// live banner. The row is deleted when the round finishes or is
-// abandoned, which clears the banner everywhere else.
-// ══════════════════════════════════════
-let isHostingLiveRound = false;
-let liveScorePushTimer = null;
-
-// ══════════════════════════════════════
-// COMPLETION REMINDER + AUTO-SAVE — once every player has a score
-// entered: remind the host at 5 minutes, then auto-save the round at
-// 30 minutes if it still hasn't been saved. Auto-save only ever fires
-// when every score is already complete, so it never records a 0 for
-// someone who hasn't finished — it just does what the host would do
-// anyway by tapping the button. Only works while this browser tab
-// stays open (no backend push/cron exists here — that would need real
-// server-side infrastructure this static site doesn't have).
-// ══════════════════════════════════════
-let allScoresTimer = null;
-let autoSaveTimer = null;
-let allScoresTimerStarted = false;
-
-function allScoresEntered() {
-  if (!state.players || state.players.length === 0) return false;
-  return state.players.every(p => {
-    const s = state.scores[p.id];
-    if (!s) return false;
-    const frontOk = s.front !== '' && s.front != null;
-    const backOk  = !state.hasFrontBack || (s.back !== '' && s.back != null);
-    return frontOk && backOk;
-  });
-}
-
-function checkRoundCompletionReminder() {
-  if (allScoresEntered()) {
-    if (!allScoresTimerStarted) {
-      allScoresTimerStarted = true;
-      clearTimeout(allScoresTimer);
-      clearTimeout(autoSaveTimer);
-      allScoresTimer = setTimeout(fireCompletionReminder, 5 * 60 * 1000);
-      autoSaveTimer  = setTimeout(autoSaveRound, 30 * 60 * 1000);
-    }
-  } else {
-    allScoresTimerStarted = false;
-    clearTimeout(allScoresTimer);
-    clearTimeout(autoSaveTimer);
-    dismissReminderBanner();
-  }
-}
-
-function clearCompletionReminder() {
-  allScoresTimerStarted = false;
-  clearTimeout(allScoresTimer);
-  clearTimeout(autoSaveTimer);
-  dismissReminderBanner();
-}
-
-function autoSaveRound() {
-  if (!isHostingLiveRound) return;
-  if (!document.getElementById('screen-scorecard')?.classList.contains('active')) return;
-  if (!allScoresEntered()) return; // safety check — never auto-save incomplete scores
-  finishRound();
-  showReminderBanner('✅ Round auto-saved after 30 minutes — no action needed.');
-}
-
-function fireCompletionReminder() {
-  if (!isHostingLiveRound) return;
-  if (!document.getElementById('screen-scorecard')?.classList.contains('active')) return;
-  const msg = 'All scores are in — tap "Round Complete" to save this round.';
-  if (window.Notification && Notification.permission === 'granted') {
-    try { new Notification('Stableford round ready to save', { body: msg }); } catch(e) {}
-  }
-  showReminderBanner(msg);
-}
-
-function showReminderBanner(msg) {
-  let el = document.getElementById('completion-reminder');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'completion-reminder';
-    el.style.cssText = 'position:fixed;top:60px;left:0;right:0;z-index:60;max-width:680px;margin:0 auto;padding:0 16px;';
-    document.body.appendChild(el);
-  }
-  el.innerHTML = `<div style="background:var(--gold);color:var(--ink);border-radius:6px;padding:10px 14px;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 2px 10px rgba(0,0,0,0.2);">
-    <span>⏰ ${msg}</span>
-    <button onclick="dismissReminderBanner()" style="background:none;border:none;font-size:16px;cursor:pointer;color:var(--ink);line-height:1;">×</button>
-  </div>`;
-}
-
-function dismissReminderBanner() {
-  document.getElementById('completion-reminder')?.remove();
-}
-
-function pushLiveRound() {
-  if (!isHostingLiveRound) return;
-  sbUpsert('live_round', 'current', state);
-}
-
-function scheduleLiveRoundPush() {
-  if (!isHostingLiveRound) return;
-  clearTimeout(liveScorePushTimer);
-  liveScorePushTimer = setTimeout(pushLiveRound, 800);
-}
-
-async function clearLiveRound() {
-  isHostingLiveRound = false;
-  clearTimeout(liveScorePushTimer);
-  await sbDelete('live_round', 'current');
-}
-
-// Manual refresh — re-pulls profiles/history from Supabase (which only
-// otherwise sync once, on page load) and re-renders whatever's on screen,
-// plus an immediate live-round check.
-async function manualRefresh() {
-  const btn = document.getElementById('refresh-btn');
-  if (btn) btn.style.transform = 'rotate(360deg)';
-  await syncFromSupabase();
-  renderProfiles();
-  renderSetup();
-  await checkLiveRound();
-  if (btn) setTimeout(() => { btn.style.transform = ''; }, 400);
-}
-
-async function checkLiveRound() {
-  const banner = document.getElementById('live-round-banner');
-  if (!banner) return;
-  if (isHostingLiveRound || document.getElementById('screen-scorecard')?.classList.contains('active')) {
-    banner.style.display = 'none';
-    banner.innerHTML = '';
-    return;
-  }
-  const rows = await sbGet('live_round');
-  const live = rows && rows[0];
-  renderLiveRoundBanner(live || null);
-}
-
-function renderLiveRoundBanner(live) {
-  const banner = document.getElementById('live-round-banner');
-  if (!banner) return;
-  if (!live || !live.players || live.players.length === 0) {
-    banner.style.display = 'none';
-    banner.innerHTML = '';
-    return;
-  }
-  const ranked = live.players.map(p => {
-    const s = (live.scores && live.scores[p.id]) || {};
-    const f = parseInt(s.front) || 0;
-    const b = s.back != null ? (parseInt(s.back) || 0) : 0;
-    return { name: p.name, pts: f + b };
-  }).sort((a, b) => b.pts - a.pts);
-  const chips = ranked.map(p =>
-    `<span style="margin-right:12px;white-space:nowrap;"><strong>${p.name.split(' ')[0]}</strong> ${p.pts || '–'}</span>`
-  ).join('');
-  banner.style.display = 'block';
-  banner.innerHTML = `
-    <div class="page" style="padding-bottom:0;">
-      <div style="background:var(--green-deep);color:#fff;border-radius:6px;padding:10px 14px;font-size:12px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
-        <span style="color:var(--gold-light);font-weight:800;flex-shrink:0;">🔴 LIVE</span>
-        <span style="opacity:0.8;flex-shrink:0;">${live.date || ''} round in progress —</span>
-        <span style="display:flex;flex-wrap:wrap;overflow-x:auto;">${chips}</span>
-      </div>
-    </div>`;
-}
-
 const PLAYER_COLORS = ['#1B4D3E','#2563EB','#C0392B','#C9A84C','#6B3FA0','#0E7490'];
 function initials(name) { return name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2); }
 
@@ -912,12 +723,6 @@ function showScreen(id) {
   document.getElementById('tab-' + id).classList.add('active');
   if (id === 'profiles') renderProfiles();
   if (id === 'setup')    renderSetup();
-  if (id === 'scorecard') {
-    const banner = document.getElementById('live-round-banner');
-    if (banner) { banner.style.display = 'none'; banner.innerHTML = ''; }
-  } else {
-    checkLiveRound();
-  }
 }
 
 // ══════════════════════════════════════
@@ -1020,6 +825,7 @@ function renderProfiles() {
           <span class="p-badge" style="background:${teeBadgeColor(p.tee)};color:${teeBadgeText(p.tee)};border:1px solid rgba(0,0,0,0.08)">${teeBadgeIcon(p.tee)} ${p.tee||'White'}</span>
           ${teamBadge}
         </div>
+        ${p.cell ? `<div style="font-size:11px;color:var(--ink-soft);margin-top:4px;">📱 ${p.cell}</div>` : ''}
       </div>
       <div class="card-actions" style="position:static;flex-shrink:0;">
         <button class="icon-btn" title="Edit"
@@ -1160,6 +966,7 @@ function openProfileModal(pid) {
     document.getElementById('m-name').value  = p.name;
     document.getElementById('m-quota').value = p.quota;
     document.getElementById('m-tee').value   = p.tee || 'White';
+    document.getElementById('m-cell').value  = p.cell || '';
     // Show team number preview
     const tn = calcTeamNumber(pid);
     const prev = document.getElementById('modal-team-preview');
@@ -1175,6 +982,7 @@ function openProfileModal(pid) {
     document.getElementById('m-name').value  = '';
     document.getElementById('m-quota').value = '';
     document.getElementById('m-tee').value   = 'White';
+    document.getElementById('m-cell').value  = '';
     document.getElementById('modal-team-preview').style.display = 'none';
   }
   document.getElementById('profile-modal').classList.add('open');
@@ -1189,14 +997,15 @@ function saveProfile() {
   if (!name) { alert('Enter a name.'); return; }
   const quota = parseInt(document.getElementById('m-quota').value) || 0;
   const tee   = document.getElementById('m-tee').value || 'White';
+  const cell  = document.getElementById('m-cell').value.trim();
   const pid   = document.getElementById('edit-pid').value;
 
   const profiles = loadProfiles();
   if (pid) {
     const idx = profiles.findIndex(p => p.id === pid);
-    if (idx >= 0) profiles[idx] = { ...profiles[idx], name, quota, tee };
+    if (idx >= 0) profiles[idx] = { ...profiles[idx], name, quota, tee, cell };
   } else {
-    profiles.push({ id: genId(), name, quota, tee });
+    profiles.push({ id: genId(), name, quota, tee, cell });
   }
   saveProfiles(profiles);
   closeProfileModal();
@@ -1276,21 +1085,19 @@ function renderSetup() {
         ${TEE_ORDER.map(t => `<option value="${t}" ${t===roundTee?'selected':''}>${teeBadgeIcon(t)} ${t}</option>`).join('')}
       </select>` : '';
     return `<div class="player-pick-row" style="${inRound?'background:#F0EDE6;border-radius:4px;padding-left:8px':''}">
-      <div class="pick-main-row">
-        <div class="pick-avatar" style="background:${color}">${initials(p.name)}</div>
-        <div class="pick-name" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.name}</div>
+      <div class="pick-avatar" style="background:${color}">${initials(p.name)}</div>
+      <div style="flex:1;min-width:0;">
+        <div class="pick-name">${p.name}</div>
+        <div style="font-size:11px;color:var(--ink-soft);display:flex;align-items:center;flex-wrap:wrap;gap:4px;">
+          <span>${teamStr}</span>
+          ${inRound ? `<span>· Tee: ${teeSelector}${adjStr}</span>` : `<span>· ${teeBadgeIcon(p.tee)} ${p.tee||'White'}</span>`}
+        </div>
       </div>
-      <div class="pick-actions">
-        <div class="pick-quota">Q: ${p.quota}${adj!==0?`<span style="color:${adj>0?'var(--green-mid)':'var(--red)'};font-size:10px;display:block;">${adj>0?'+':''}${adj} tee</span>`:''}</div>
-        <button class="btn btn-sm ${inRound?'btn-danger':'btn-outline'}"
-          onclick="toggleSetupPlayer('${p.id}')">
-          ${inRound ? '− Remove' : '+ Add'}
-        </button>
-      </div>
-      <div class="pick-info-line">
-        <span>${teamStr}</span>
-        ${inRound ? `<span>· Tee: ${teeSelector}${adjStr}</span>` : `<span>· ${teeBadgeIcon(p.tee)} ${p.tee||'White'}</span>`}
-      </div>
+      <div class="pick-quota">Q: ${p.quota}${adj!==0?`<span style="color:${adj>0?'var(--green-mid)':'var(--red)'};font-size:10px;display:block;">${adj>0?'+':''}${adj} tee</span>`:''}</div>
+      <button class="btn btn-sm ${inRound?'btn-danger':'btn-outline'}" style="margin-left:8px"
+        onclick="toggleSetupPlayer('${p.id}')">
+        ${inRound ? '− Remove' : '+ Add'}
+      </button>
     </div>`;
   }).join('');
 }
@@ -1534,7 +1341,7 @@ function startRound() {
     const roundTee   = setupTees[pid] || defaultTee;
     const teeAdj     = teeQuotaAdjustment(defaultTee, roundTee);
     const adjQuota   = p.quota + teeAdj;
-    return { id: p.id, name: p.name, quota: adjQuota, baseQuota: p.quota, tee: roundTee, defaultTee, teeAdj, color: PLAYER_COLORS[profiles.indexOf(p) % PLAYER_COLORS.length] };
+    return { id: p.id, name: p.name, quota: adjQuota, baseQuota: p.quota, tee: roundTee, defaultTee, teeAdj, cell: p.cell || '', color: PLAYER_COLORS[profiles.indexOf(p) % PLAYER_COLORS.length] };
   });
 
   // Determine teams
@@ -1572,19 +1379,9 @@ function startRound() {
   state = { numHoles, hasFrontBack, players, date, quotaGame, scores, isTeamGame, teams, fmt, blindDraw };
   manualTeams = [];
 
-  isHostingLiveRound = true;
-  roundAlreadySaved  = false;
-  pushLiveRound();
-  clearCompletionReminder();
-  if (window.Notification && Notification.permission === 'default') {
-    Notification.requestPermission();
-  }
-
   showScreen('scorecard');
   document.getElementById('result-banner').style.display = 'none';
   renderScorecard();
-  const btn = document.getElementById('finish-round-btn');
-  if (btn) { btn.disabled = false; btn.textContent = '🏆 Round Complete'; }
 }
 
 // ══════════════════════════════════════
@@ -1600,8 +1397,6 @@ function totalPoints(pid) {
 function updateScore(pid, half, val) {
   state.scores[pid][half] = val === '' ? '' : parseInt(val);
   renderScorecard();
-  scheduleLiveRoundPush();
-  checkRoundCompletionReminder();
 }
 
 function teamTotal(team) {
@@ -1761,36 +1556,116 @@ function renderQuotaBars() {
 }
 
 // ══════════════════════════════════════
+// TEXT PAIRINGS
+// ══════════════════════════════════════
+function buildPairingsMessage() {
+  const { date, isTeamGame, teams, players, blindDraw } = state;
+  const lines = [`⛳ Huntsville Stableford – ${date}`];
+
+  if (isTeamGame && teams && teams.length > 0 && !blindDraw) {
+    lines.push(`Format: ${teams.length} teams (${teams.map(t=>t.playerIds.length).join('/')} players) · Stableford quota game`);
+    lines.push('');
+    teams.forEach(t => {
+      const names = t.playerIds.map(pid => players.find(p => p.id === pid)?.name).filter(Boolean).join(', ');
+      lines.push(`${t.name}: ${names}`);
+    });
+  } else if (isTeamGame && blindDraw) {
+    lines.push(`Format: ${teams.length} teams (${teams.map(t=>t.playerIds.length).join('/')} players) · Stableford quota game`);
+    lines.push('Teams are a blind draw — revealed when the round is finished!');
+    lines.push('');
+    lines.push(`Players: ${players.map(p => p.name).join(', ')}`);
+  } else {
+    lines.push('Format: Individual Stableford quota game');
+    lines.push('');
+    lines.push(`Players: ${players.map(p => p.name).join(', ')}`);
+  }
+
+  lines.push('');
+  lines.push('Quotas:');
+  players.forEach(p => lines.push(`${p.name}: ${p.quota} (${p.tee || 'White'} tees)`));
+
+  return lines.join('\n');
+}
+
+// sms: URI — "?&body=" prefix is a cross-platform trick that pre-fills the
+// message body on both iOS and Android without breaking either one.
+function smsLink(cell, message) {
+  const digits = (cell || '').replace(/[^\d+]/g, '');
+  return `sms:${digits}?&body=${encodeURIComponent(message)}`;
+}
+
+function openNotifyModal() {
+  if (!state.players || state.players.length === 0) return;
+  const msg = buildPairingsMessage();
+  document.getElementById('notify-message').value = msg;
+
+  const rows = state.players.map(p => {
+    const hasCell = !!p.cell;
+    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #F0EDE6;">
+      <div style="width:30px;height:30px;border-radius:50%;background:${p.color};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0;">${initials(p.name)}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:700;">${p.name}</div>
+        <div style="font-size:11px;color:var(--ink-soft);">${hasCell ? p.cell : 'No cell number on file'}</div>
+      </div>
+      ${hasCell
+        ? `<a class="btn btn-primary btn-sm" href="${smsLink(p.cell, msg)}">📱 Text</a>`
+        : `<button class="btn btn-outline btn-sm" disabled style="opacity:0.5;cursor:not-allowed;">📱 Text</button>`}
+    </div>`;
+  }).join('');
+  document.getElementById('notify-recipients').innerHTML = rows;
+
+  document.getElementById('notify-modal').classList.add('open');
+}
+
+function closeNotifyModal() {
+  document.getElementById('notify-modal').classList.remove('open');
+}
+
+function copyPairingsMessage() {
+  const msg = document.getElementById('notify-message').value;
+  navigator.clipboard.writeText(msg).then(() => {
+    alert('Message copied to clipboard.');
+  }).catch(() => {
+    alert('Could not copy automatically — select the text and copy manually.');
+  });
+}
+
+// Rebuild the send links if the user edits the message text before sending
+document.addEventListener('input', (e) => {
+  if (e.target && e.target.id === 'notify-message') {
+    const msg = e.target.value;
+    document.querySelectorAll('#notify-recipients a.btn-primary').forEach(a => {
+      const idx = [...document.querySelectorAll('#notify-recipients a.btn-primary')].indexOf(a);
+      const withCell = state.players.filter(p => p.cell);
+      const p = withCell[idx];
+      if (p) a.href = smsLink(p.cell, msg);
+    });
+  }
+});
+
+// ══════════════════════════════════════
 // QUOTA ADJUSTMENT
-// 50% of diff, max +2, max -1, rounded to whole number (0.5 rounds
-// away from zero in both directions — JS's Math.round(-0.5) gives -0,
-// not -1, so magnitude is rounded first and the sign applied after).
+// 50% of diff, max +2, max -1, rounded to whole number
 // ══════════════════════════════════════
 function calcNewQuota(currentQuota, points) {
   const diff = points - currentQuota;
   if (diff === 0) return currentQuota;
-  const magnitude = Math.round(Math.abs(diff) * 0.5);
-  const change = diff > 0 ? Math.min(2, magnitude) : -Math.min(1, magnitude);
+  let change;
+  if (diff > 0) {
+    change = Math.min(2, Math.round(diff * 0.5));
+  } else {
+    change = Math.max(-1, Math.round(diff * 0.5));
+  }
   return currentQuota + change;
 }
 
 // ══════════════════════════════════════
 // FINISH ROUND
 // ══════════════════════════════════════
-let roundAlreadySaved = false;
-
 function finishRound() {
-  if (roundAlreadySaved) return; // guard against double-save (double-tap, auto-save race, etc.)
-  roundAlreadySaved = true;
-  const btn = document.getElementById('finish-round-btn');
-  if (btn) { btn.disabled = true; btn.textContent = '✅ Round Saved'; }
-
   const { players, quotaGame } = state;
   const ranked = players.map(p => ({ ...p, pts: totalPoints(p.id) }))
     .sort((a,b) => b.pts - a.pts);
-
-  clearLiveRound();
-  clearCompletionReminder();
 
   // Calculate new quotas and save them back to profiles
   // Performance adjustment is calculated against the round quota (tee-adjusted),
@@ -1841,7 +1716,6 @@ function finishRound() {
   // ── Team winner: highest average delta per player ──
   let teamSection = '';
   let teamWinnerLabel = '';
-  let teamMoneyByPlayer = {}; // pid -> $ won from team segment payouts
   if (state.isTeamGame && state.teams && state.teams.length > 0) {
     const teamsWithDelta = state.teams.map(t => {
       const sz = t.playerIds.length;
@@ -1866,12 +1740,49 @@ function finishRound() {
       ? teamWinners.map(t => t.name).join(' & ')
       : teamsWithDelta[0].name;
 
+    const teamRows = teamsWithDelta.map((t, i) => {
+      const isTied  = t.combinedDelta === topDelta;
+      const medal   = teamTie && isTied ? '🤝' : i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`;
+      const dColor  = t.combinedDelta > 0 ? '#6fcf97' : t.combinedDelta < 0 ? '#f08080' : '#8FBFAA';
+      const avgStr  = `${t.combinedDelta >= 0 ? '+' : ''}${(Math.round(t.combinedDelta * 10) / 10)}`;
+      const rawStr  = `${t.rawDelta >= 0 ? '+' : ''}${t.rawDelta}`;
+      return `<tr>
+        <td>${medal} ${t.name}</td>
+        <td style="color:var(--ink-soft);font-size:11px">${t.members}</td>
+        <td>${t.combinedPts} pts</td>
+        <td style="color:${dColor};font-weight:700">${avgStr} avg<br><span style="font-size:10px;font-weight:400">${rawStr} total</span></td>
+      </tr>`;
+    }).join('');
+
     const blindNote = state.blindDraw
       ? `<div style="margin-bottom:8px;font-size:12px;color:#8FBFAA;">🎲 Blind draw teams revealed!</div>` : '';
     teamSection = `
-      <div style="margin:14px 0 6px;font-size:12px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;">🏆 Teams</div>
-      ${blindNote}`;
+      <div style="margin:14px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">⛳ Team Result</div>
+      ${blindNote}
+      <div style="font-size:18px;font-weight:800;color:var(--gold-light);margin-bottom:10px;">${teamWinStr}</div>
+      <table class="result-table" style="margin-bottom:10px;"><tbody>${teamRows}</tbody></table>
+      <div style="margin:10px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">🏌️ Individual Result</div>`;
   }
+
+  // ── Individual result rows — sorted by delta ──
+  const indivRows = withDelta.map((r, i) => {
+    const isTied  = r.delta === topIndivDelta;
+    const medal   = indivTie && isTied ? '🤝' : i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`;
+    const dColor  = r.delta > 0 ? 'var(--gold-light)' : r.delta < 0 ? '#f08080' : '#8FBFAA';
+    const dStr    = `${r.delta >= 0 ? '+' : ''}${r.delta}`;
+    const qArrow  = r.quotaChange > 0 ? '▲' : r.quotaChange < 0 ? '▼' : '—';
+    const qColor  = r.quotaChange > 0 ? '#6fcf97' : r.quotaChange < 0 ? '#f08080' : '#8FBFAA';
+    const qStr    = `<span style="color:${qColor};font-size:11px"> · Q ${r.quota} ${qArrow} ${r.newQuota}</span>`;
+    let teamLabel = '';
+    if (state.isTeamGame && state.teams) {
+      const myTeam = state.teams.find(t => t.playerIds.includes(r.id));
+      if (myTeam) teamLabel = `<span style="color:#8FBFAA;font-size:11px"> · ${myTeam.name}</span>`;
+    }
+    return `<tr>
+      <td>${medal} ${r.name}${teamLabel}</td>
+      <td>${r.pts} pts <span style="color:${dColor};font-weight:700">${dStr}</span>${qStr}</td>
+    </tr>`;
+  }).join('');
 
   // ── Payout tables ──
   // Individual payouts by player count [1st, 2nd, 3rd, 4th]
@@ -1922,57 +1833,18 @@ function finishRound() {
       const totalPrize = positions.reduce((s, pos) => s + (indivPayout[pos] || 0), 0);
       const eachGets   = tied.length > 1 ? Math.round(totalPrize / tied.length) : totalPrize;
       tied.forEach(r => {
-        if (eachGets > 0) rows.push({ id: r.id, name: r.name, delta: r.delta, prize: eachGets, tied: tied.length > 1 });
+        if (eachGets > 0) rows.push({ name: r.name, delta: r.delta, prize: eachGets, tied: tied.length > 1 });
       });
       i += tied.length;
     }
     return rows;
   })();
 
-  const indivPrizeById = new Map(indivPayoutRows.map(r => [r.id, r]));
-
-  // ── Individual result rows — ALL players, sorted by delta, with the $
-  // payout shown right next to whoever won money ──
-  const indivRows = withDelta.map((r, i) => {
-    const isTied  = r.delta === topIndivDelta;
-    const medal   = indivTie && isTied ? '🤝' : i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`;
-    const dColor  = r.delta > 0 ? 'var(--gold-light)' : r.delta < 0 ? '#f08080' : '#8FBFAA';
-    const dStr    = `${r.delta >= 0 ? '+' : ''}${r.delta}`;
-    const qArrow  = r.quotaChange > 0 ? '▲' : r.quotaChange < 0 ? '▼' : '—';
-    const qColor  = r.quotaChange > 0 ? '#6fcf97' : r.quotaChange < 0 ? '#f08080' : '#8FBFAA';
-    const qStr    = `<span style="color:${qColor};font-size:11px;white-space:nowrap;"> · Q ${r.quota} ${qArrow} ${r.newQuota}</span>`;
-    let teamLabel = '';
-    const won = indivPrizeById.get(r.id);
-    const wonStr = won
-      ? `<span style="color:var(--gold-light);font-weight:800;white-space:nowrap;">$${won.prize}${won.tied?' (split)':''}</span>`
-      : '';
-    return `<div style="display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:2px 8px;padding:8px 4px;border-bottom:1px solid rgba(255,255,255,0.1);">
-      <div style="font-weight:700;font-size:14px;display:flex;flex-wrap:wrap;align-items:baseline;gap:0 6px;">
-        <span>${medal} ${r.name}</span>${teamLabel}
-      </div>
-      <div style="display:flex;flex-wrap:wrap;align-items:baseline;justify-content:flex-end;gap:2px 6px;font-size:13px;">
-        <span style="white-space:nowrap;">${r.pts} pts</span>
-        <span style="color:${dColor};font-weight:700;white-space:nowrap;">${dStr}</span>
-        ${qStr}
-        ${wonStr}
-      </div>
-    </div>`;
-  }).join('');
-
-  // ── Worst performer vs. their quota ──
-  const worst = withDelta[withDelta.length - 1];
-  const worstNote = `
-    <div style="margin-top:12px;background:rgba(240,128,128,0.12);border-radius:6px;padding:10px 14px;font-size:12px;color:#f08080;">
-      🪫 Toughest day: <strong>${worst.name}</strong> — ${worst.delta >= 0 ? '+' : ''}${worst.delta} vs quota
-    </div>`;
-
   // ── Team payouts ──
-  // Every team's TEAM-segment pot (front + back + total) is sized to the
-  // LARGEST team, so a short-handed team's real players split the full
-  // pot among themselves — e.g. a 3-player team covers the missing 4th
-  // player's share. The $10 individual-payout portion is flat per real
-  // player and is never inflated to cover a missing player.
-  // Standard (full team) stake: $5 front + $5 back + $10 total + $10 indiv = $30/player.
+  // All teams contribute as if they have the same size as the LARGEST team.
+  // Smaller teams top up per-player: extra = (largestSz - teamSz) * $20 / teamSz
+  // Segments: front=$5/player, back=$5/player, total=$10/player (largest team basis)
+  // Winning team always collects largest-team stake × number of losing teams.
   let teamPayoutHtml = '';
   if (state.isTeamGame && state.teams && state.teams.length > 0) {
     const teamSizes   = state.teams.map(t => t.playerIds.length);
@@ -1981,24 +1853,22 @@ function finishRound() {
     const frontStake  = largestSz * 5;   // e.g. 4 players × $5 = $20
     const backStake   = largestSz * 5;
     const totalStake  = largestSz * 10;
-    const teamStake   = frontStake + backStake + totalStake; // $20+$20+$40 = $80 team pot
-    const INDIV_STAKE = 10; // flat per real player, never inflated for a missing player
+    const fullStake   = frontStake + backStake + totalStake; // $20+$20+$40 = $80
 
     // Per-player costs for each team
     const teamPlayerCosts = state.teams.map(t => {
-      const sz             = t.playerIds.length;
-      const teamShare      = teamStake / sz;               // this team's cut of the $80 pot, split among its REAL players
-      const perPlayer      = teamShare + INDIV_STAKE;       // + flat $10 individual stake
-      const standardShare  = teamStake / largestSz;         // what a full-team player pays for the team portion
-      const standard       = standardShare + INDIV_STAKE;   // full standard stake, e.g. $30
-      const extra          = perPlayer - standard;          // top-up a short team pays to cover the missing player(s)
+      const sz        = t.playerIds.length;
+      const teamFull  = fullStake; // each team puts in the same total
+      const perPlayer = teamFull / sz;
+      const standard  = fullStake / largestSz; // what largest-team player pays
+      const extra     = perPlayer - standard;
       return {
         teamId: t.id,
         name: t.name,
         sz,
         perPlayer: Math.round(perPlayer * 100) / 100,
         extra: Math.round(extra * 100) / 100,
-        members: t.playerIds.map(pid => state.players.find(p=>p.id===pid)?.name.split(' ')[0]).join(', ')
+        members: t.playerIds.map(pid => state.players.find(p=>p.id===pid)?.name.split(' ')[0]).join(' & ')
       };
     });
 
@@ -2044,102 +1914,64 @@ function finishRound() {
       return { winners, tie, pot, prize, key };
     };
 
-    // With exactly 2 teams, there's no separate front/back contest —
-    // the whole $20/player team stake (front+back+total combined) rides
-    // on the Total variance alone. With 3+ teams, front/back/total are
-    // each contested and paid out separately as usual.
-    let frontW, backW, totW;
-    if (numTeams === 2) {
-      frontW = null;
-      backW  = null;
-      totW   = segmentWinner('totalDelta', teamStake * (numTeams - 1));
-    } else {
-      frontW = segmentWinner('frontDelta', frontStake * (numTeams - 1));
-      backW  = state.hasFrontBack ? segmentWinner('backDelta', backStake * (numTeams - 1)) : null;
-      totW   = segmentWinner('totalDelta', totalStake * (numTeams - 1));
-    }
-
-    // Credit each winning segment's prize, split evenly among that team's
-    // players, to a running per-player total for the Money Recap.
-    [frontW, backW, totW].forEach(seg => {
-      if (!seg) return;
-      seg.winners.forEach(t => {
-        const share = seg.prize / t.sz;
-        t.playerIds.forEach(pid => {
-          teamMoneyByPlayer[pid] = (teamMoneyByPlayer[pid] || 0) + share;
-        });
-      });
-    });
+    const frontW = segmentWinner('frontDelta', frontStake * (numTeams - 1));
+    const backW  = state.hasFrontBack ? segmentWinner('backDelta', backStake * (numTeams - 1)) : null;
+    const totW   = segmentWinner('totalDelta', totalStake * (numTeams - 1));
 
     const fmtMoney = v => `$${Number.isInteger(v) ? v : v.toFixed(2)}`;
-    const fmtDelta = v => `${v >= 0 ? '+' : ''}${Math.round(v * 100) / 100}`;
 
-    // Each segment (Front 9 / Back 9 / Total) gets its own clearly labeled
-    // card: winning team, the players on it, their avg, and the $ prize.
-    const segCard = (icon, label, result) => {
+    const fmtDelta = v => `${v >= 0 ? '+' : ''}${Math.round(v * 100) / 100}`;
+    const segRow = (label, result) => {
       if (!result) return '';
-      const winnerBlocks = result.winners.map(t => {
-        const deltaVal = result.key === 'frontDelta' ? t.frontDelta
-                        : result.key === 'backDelta'  ? t.backDelta
-                        : t.totalDelta;
-        return `
-          <div style="font-size:15px;font-weight:800;color:var(--white);">${t.name}</div>
-          <div style="font-size:12px;color:#8FBFAA;margin-top:2px;">${t.members}</div>
-          <div style="font-size:11px;color:#8FBFAA;margin-top:2px;">avg ${fmtDelta(deltaVal)}/player</div>`;
-      }).join('<div style="height:10px;border-top:1px solid rgba(255,255,255,0.12);margin-top:8px;padding-top:8px;"></div>');
+      const winNames = result.winners.map(t =>
+        `${t.name} (${t.members}) avg ${fmtDelta(result.key === 'frontDelta' ? t.frontDelta : result.key === 'backDelta' ? t.backDelta : t.totalDelta)}/player`
+      ).join(' / ');
       const prize = result.tie ? `${fmtMoney(result.prize)} each (tie)` : fmtMoney(result.prize);
-      return `
-        <div style="background:rgba(255,255,255,0.07);border-radius:6px;padding:12px 14px;margin-bottom:8px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-            <span style="font-size:11px;font-weight:700;color:var(--gold-light);text-transform:uppercase;letter-spacing:0.5px;">${icon} ${label}</span>
-            <span style="font-size:18px;font-weight:800;color:var(--gold-light);">${prize}</span>
-          </div>
-          ${winnerBlocks}
-        </div>`;
+      return `<tr>
+        <td>${label}</td>
+        <td style="font-size:11px">${winNames}</td>
+        <td style="color:var(--gold-light);font-weight:700">${prize}</td>
+      </tr>`;
     };
 
     // Player cost breakdown
     const costRows = teamPlayerCosts.map(tc => {
-      const extraStr = tc.extra > 0 ? `<span style="color:#f08080;font-size:10px;">(+${fmtMoney(tc.extra)} top-up)</span>` : '';
-      return `<div style="padding:8px 4px;border-bottom:1px solid rgba(255,255,255,0.1);">
-        <div style="display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:2px 8px;">
-          <span style="font-weight:700;font-size:13px;">${tc.name}</span>
-          <span style="color:var(--gold-light);font-weight:800;font-size:14px;white-space:nowrap;">${fmtMoney(tc.perPlayer)}/player</span>
-        </div>
-        <div style="display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:2px 8px;margin-top:2px;">
-          <span style="font-size:11px;color:#8FBFAA;">${tc.members}</span>
-          <span style="font-size:10px;color:#8FBFAA;white-space:nowrap;">${tc.sz} players ${extraStr}</span>
-        </div>
-      </div>`;
+      const extraStr = tc.extra > 0 ? ` <span style="color:#f08080;font-size:10px">(+${fmtMoney(tc.extra)} top-up)</span>` : '';
+      return `<tr>
+        <td style="font-size:11px">${tc.name} — ${tc.members}</td>
+        <td style="font-size:11px;color:var(--ink-soft)">${tc.sz} players</td>
+        <td style="font-size:11px;color:#8FBFAA">${fmtMoney(tc.perPlayer)}/player${extraStr}</td>
+      </tr>`;
     }).join('');
 
     teamPayoutHtml = `
-      ${segCard('🏌️', 'Front 9', frontW)}
-      ${segCard('🏌️', 'Back 9', backW)}
-      ${segCard('🏆', 'Total', totW)}
-      <div style="margin:8px 0 4px;font-size:10px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">Player Stakes (what each player owes)</div>
-      <div style="background:rgba(255,255,255,0.05);border-radius:6px;padding:2px 10px;margin-bottom:10px;">${costRows}</div>`;
+      <div style="margin:14px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">💰 Team Payouts</div>
+      <table class="result-table" style="margin-bottom:6px;">
+        <tbody>
+          ${segRow('Front 9', frontW)}
+          ${segRow('Back 9', backW)}
+          ${segRow('Total', totW)}
+        </tbody>
+      </table>
+      <div style="margin:8px 0 4px;font-size:10px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">Player Stakes</div>
+      <table class="result-table" style="margin-bottom:10px;">
+        <tbody>${costRows}</tbody>
+      </table>`;
   }
 
-  // ── Money Recap — every player who won money this round, combining
-  // their individual payout with any team-segment winnings ──
-  const moneyRecapHtml = (() => {
-    const totals = new Map(); // pid -> { name, amount }
-    withDelta.forEach(r => {
-      const indiv = indivPrizeById.get(r.id)?.prize || 0;
-      const team  = teamMoneyByPlayer[r.id] || 0;
-      const amount = indiv + team;
-      if (amount > 0) totals.set(r.id, { name: r.name, amount });
-    });
-    const sorted = [...totals.values()].sort((a, b) => b.amount - a.amount);
-    if (sorted.length === 0) return '';
-    const rows = sorted.map(p => `<div style="display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:2px 8px;padding:8px 4px;border-bottom:1px solid rgba(255,255,255,0.1);">
-      <span style="font-weight:700;font-size:14px;">${p.name}</span>
-      <span style="color:var(--gold-light);font-weight:800;font-size:15px;white-space:nowrap;">$${Number.isInteger(p.amount) ? p.amount : p.amount.toFixed(2)}</span>
-    </div>`).join('');
-    return `
-      <div style="margin:16px 0 6px;font-size:12px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;">💵 Money Recap</div>
-      <div style="background:rgba(255,255,255,0.05);border-radius:6px;padding:2px 10px;margin-bottom:10px;">${rows}</div>`;
+  // Individual payout HTML
+  const indivPayoutHtml = (() => {
+    const rows = indivPayoutRows.map(r => {
+      const dColor = r.delta > 0 ? '#6fcf97' : r.delta < 0 ? '#f08080' : '#8FBFAA';
+      return `<tr>
+        <td>${r.name}</td>
+        <td style="color:${dColor}">${r.delta >= 0 ? '+' : ''}${r.delta} vs Q</td>
+        <td style="color:var(--gold-light);font-weight:700">$${r.prize}${r.tied?' (split)':''}</td>
+      </tr>`;
+    }).join('');
+    return rows ? `
+      <div style="margin:14px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">💰 Individual Payouts</div>
+      <table class="result-table" style="margin-bottom:10px;"><tbody>${rows}</tbody></table>` : '';
   })();
 
   // ── Winner headline ──
@@ -2156,11 +1988,10 @@ function finishRound() {
     <div class="result-score">${state.date}</div>
     ${teamSection}
     ${teamPayoutHtml}
-    <div style="margin:16px 0 6px;font-size:12px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;">🏌️ Individual</div>
+    ${!state.isTeamGame ? `<div style="margin:14px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">🏌️ Individual Result</div>` : ''}
     <div style="margin-bottom:8px;font-size:14px;color:var(--gold-light);font-weight:700;">${indivWinStr}</div>
-    <div>${indivRows}</div>
-    ${worstNote}
-    ${moneyRecapHtml}
+    <table class="result-table"><tbody>${indivRows}</tbody></table>
+    ${indivPayoutHtml}
     <div style="margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
       <button class="btn btn-outline btn-sm" onclick="showScreen('profiles')" style="color:#fff;border-color:rgba(255,255,255,0.3)">View Profiles</button>
       <button class="btn btn-outline btn-sm" onclick="newRound()" style="color:#fff;border-color:rgba(255,255,255,0.3)">New Round</button>
@@ -2171,16 +2002,12 @@ function finishRound() {
 
 function goBackToSetup() {
   showConfirm('Go back to setup? Current scores will be lost.', () => {
-    clearLiveRound();
-    clearCompletionReminder();
     showScreen('setup');
   });
 }
 
 function abandonRound() {
   showConfirm('Abandon this round? Scores will not be saved.', () => {
-    clearLiveRound();
-    clearCompletionReminder();
     newRound();
   });
 }
@@ -2203,10 +2030,6 @@ syncFromSupabase().then(() => {
   renderProfiles();
   renderSetup();
 });
-
-// Poll for a live round in progress on another device
-checkLiveRound();
-setInterval(checkLiveRound, 6000);
 </script>
 </body>
 </html>

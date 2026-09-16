@@ -1415,9 +1415,87 @@ function totalPoints(pid) {
   return f + b;
 }
 
-function updateScore(pid, half, val) {
-  state.scores[pid][half] = val === '' ? '' : parseInt(val);
-  renderScorecard();
+// Sanitizes to digits only, caps at 2 digits, updates state, refreshes just
+// this player's row (and team header/leaderboard/quota bars) without
+// re-rendering the score inputs themselves — so focus and the on-screen
+// keyboard are never lost. Auto-advances to the next score box once 2
+// digits have been entered.
+function handleScoreInput(el, pid, half) {
+  const digits = el.value.replace(/\D/g, '').slice(0, 2);
+  if (el.value !== digits) el.value = digits;
+  state.scores[pid][half] = digits === '' ? '' : parseInt(digits);
+
+  refreshPlayerRow(pid);
+  updateLeaderboard();
+  renderQuotaBars();
+
+  if (digits.length === 2) {
+    const inputs = Array.from(document.querySelectorAll('.score-input'));
+    const idx = inputs.indexOf(el);
+    if (idx > -1 && idx < inputs.length - 1) {
+      const next = inputs[idx + 1];
+      next.focus();
+      next.select();
+    } else {
+      el.blur();
+    }
+  }
+}
+
+// Updates just the TOTAL / vs-quota text for one player row, and that
+// player's team header total if applicable — everything except the score
+// inputs themselves.
+function refreshPlayerRow(pid) {
+  const p = state.players.find(x => x.id === pid);
+  if (!p) return;
+  const s    = state.scores[pid];
+  const tot  = totalPoints(pid);
+  const diff = tot - p.quota;
+  const hasScore = parseInt(s.front) > 0 || (s.back !== null && parseInt(s.back) > 0);
+  const vsQColor = diff > 0 ? 'var(--green-mid)' : diff < 0 ? 'var(--red)' : 'var(--ink-soft)';
+  const vsQStr   = hasScore ? `${diff >= 0 ? '+' : ''}${diff}` : '—';
+
+  const totEl = document.getElementById(`tot-${pid}`);
+  if (totEl) totEl.textContent = hasScore ? tot : '—';
+  const vsqEl = document.getElementById(`vsq-${pid}`);
+  if (vsqEl) { vsqEl.textContent = vsQStr; vsqEl.style.color = vsQColor; }
+
+  if (state.isTeamGame && state.teams && !state.blindDraw) {
+    const team = state.teams.find(t => t.playerIds.includes(pid));
+    if (team) {
+      const hdrEl = document.getElementById(`team-hdr-${team.id}`);
+      if (hdrEl) hdrEl.textContent = `${team.name.toUpperCase()} · ${teamTotal(team)} pts`;
+    }
+    renderTeamScoresPanel();
+  }
+}
+
+// Rebuilds the top "Team Scores" summary panel (safe to fully re-render —
+// it contains no inputs, so there's no focus/keyboard to preserve).
+function renderTeamScoresPanel() {
+  const { players, teams } = state;
+  const teamPanel = document.getElementById('team-scores-panel');
+  if (!(state.isTeamGame && teams.length > 0 && !state.blindDraw)) {
+    teamPanel.style.display = 'none';
+    return;
+  }
+  teamPanel.style.display = 'block';
+  const sortedTeams = [...teams].sort((a, b) => teamTotal(b) - teamTotal(a));
+  let tHtml = '';
+  sortedTeams.forEach((t, rank) => {
+    const tot = teamTotal(t);
+    const members = t.playerIds.map(pid => players.find(p => p.id === pid)?.name.split(' ')[0]).join(' & ');
+    const isLead = rank === 0 && tot > 0;
+    tHtml += `<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--rule);${isLead?'background:#F0F7F4;':''}">
+      <div style="font-size:20px;width:28px;text-align:center;">${rank===0&&tot>0?'🏆':rank===1?'🥈':rank===2?'🥉':'  '}</div>
+      <div style="flex:1;">
+        <div style="font-size:14px;font-weight:700;">${t.name}</div>
+        <div style="font-size:12px;color:var(--ink-soft);">${members}</div>
+      </div>
+      <div style="font-size:26px;font-weight:800;color:var(--green-deep);">${tot || '—'}</div>
+    </div>`;
+  });
+  document.getElementById('team-scores-body').innerHTML = tHtml;
 }
 
 function teamTotal(team) {
@@ -1430,28 +1508,7 @@ function renderScorecard() {
   document.getElementById('sc-meta').textContent  = state.date + (quotaGame ? ' · Quota game' : '') + (isTeamGame ? ' · ' + state.fmt : '') + (state.rulesForDay ? ' · ' + state.rulesForDay : '');
 
   // Team scores panel
-  const teamPanel = document.getElementById('team-scores-panel');
-  if (isTeamGame && teams.length > 0 && !state.blindDraw) {
-    teamPanel.style.display = 'block';
-    const sortedTeams = [...teams].sort((a,b) => teamTotal(b) - teamTotal(a));
-    let tHtml = '';
-    sortedTeams.forEach((t, rank) => {
-      const tot = teamTotal(t);
-      const members = t.playerIds.map(pid => players.find(p => p.id === pid)?.name.split(' ')[0]).join(' & ');
-      const isLead = rank === 0 && tot > 0;
-      tHtml += `<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--rule);${isLead?'background:#F0F7F4;':''}">
-        <div style="font-size:20px;width:28px;text-align:center;">${rank===0&&tot>0?'🏆':rank===1?'🥈':rank===2?'🥉':'  '}</div>
-        <div style="flex:1;">
-          <div style="font-size:14px;font-weight:700;">${t.name}</div>
-          <div style="font-size:12px;color:var(--ink-soft);">${members}</div>
-        </div>
-        <div style="font-size:26px;font-weight:800;color:var(--green-deep);">${tot || '—'}</div>
-      </div>`;
-    });
-    document.getElementById('team-scores-body').innerHTML = tHtml;
-  } else {
-    teamPanel.style.display = 'none';
-  }
+  renderTeamScoresPanel();
 
   // Individual score entry cards
   // Group by team for display when team game
@@ -1476,25 +1533,25 @@ function renderScorecard() {
       <div style="display:flex;gap:10px;align-items:center;flex-shrink:0;">
         <div style="text-align:center;">
           <div style="font-size:11px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;">FRONT</div>
-          <input class="score-input" type="number" min="0" max="100" placeholder="—" value="${s.front}"
+          <input class="score-input" id="in-${p.id}-front" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" placeholder="—" value="${s.front}"
             tabindex="${tabIdx++}"
-            onchange="updateScore('${p.id}','front',this.value)" onblur="updateScore('${p.id}','front',this.value)">
+            oninput="handleScoreInput(this,'${p.id}','front')">
         </div>
         ${hasFrontBack ? `
         <div style="text-align:center;">
           <div style="font-size:11px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;">BACK</div>
-          <input class="score-input" type="number" min="0" max="100" placeholder="—" value="${s.back}"
+          <input class="score-input" id="in-${p.id}-back" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" placeholder="—" value="${s.back}"
             tabindex="${tabIdx++}"
-            onchange="updateScore('${p.id}','back',this.value)" onblur="updateScore('${p.id}','back',this.value)">
+            oninput="handleScoreInput(this,'${p.id}','back')">
         </div>
         <div style="text-align:center;min-width:44px;border-left:1px solid var(--rule);padding-left:10px;">
           <div style="font-size:11px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;">TOTAL</div>
-          <div style="font-size:20px;font-weight:800;color:var(--green-deep);line-height:1.2;">${hasScore ? tot : '—'}</div>
-          ${quotaGame ? `<div style="font-size:11px;font-weight:700;color:${vsQColor};margin-top:2px;">${vsQStr}</div>` : ''}
+          <div id="tot-${p.id}" style="font-size:20px;font-weight:800;color:var(--green-deep);line-height:1.2;">${hasScore ? tot : '—'}</div>
+          ${quotaGame ? `<div id="vsq-${p.id}" style="font-size:11px;font-weight:700;color:${vsQColor};margin-top:2px;">${vsQStr}</div>` : ''}
         </div>` : `
         ${quotaGame ? `<div style="text-align:center;min-width:44px;border-left:1px solid var(--rule);padding-left:10px;">
           <div style="font-size:9px;font-weight:600;color:var(--ink-soft);margin-bottom:3px;">VS Q</div>
-          <div style="font-size:18px;font-weight:800;color:${vsQColor};line-height:1.2;">${vsQStr}</div>
+          <div id="vsq-${p.id}" style="font-size:18px;font-weight:800;color:${vsQColor};line-height:1.2;">${vsQStr}</div>
         </div>` : ''}`}
       </div>
     </div>`;
@@ -1503,7 +1560,7 @@ function renderScorecard() {
   if (isTeamGame && teams.length > 0 && !state.blindDraw) {
     teams.forEach(t => {
       const tot = teamTotal(t);
-      entryHtml += `<div style="background:var(--green-deep);color:#fff;padding:7px 16px;font-size:11px;font-weight:700;letter-spacing:0.3px;">${t.name.toUpperCase()} · ${tot} pts</div>`;
+      entryHtml += `<div id="team-hdr-${t.id}" style="background:var(--green-deep);color:#fff;padding:7px 16px;font-size:11px;font-weight:700;letter-spacing:0.3px;">${t.name.toUpperCase()} · ${tot} pts</div>`;
       t.playerIds.forEach(pid => {
         const p = players.find(x => x.id === pid);
         if (p) entryHtml += renderPlayer(p);

@@ -1916,7 +1916,7 @@ function finishRound() {
       const totalPrize = positions.reduce((s, pos) => s + (indivPayout[pos] || 0), 0);
       const eachGets   = tied.length > 1 ? Math.round(totalPrize / tied.length) : totalPrize;
       tied.forEach(r => {
-        if (eachGets > 0) rows.push({ name: r.name, delta: r.delta, prize: eachGets, tied: tied.length > 1 });
+        if (eachGets > 0) rows.push({ id: r.id, name: r.name, delta: r.delta, prize: eachGets, tied: tied.length > 1 });
       });
       i += tied.length;
     }
@@ -1928,6 +1928,10 @@ function finishRound() {
   // Smaller teams top up per-player: extra = (largestSz - teamSz) * $20 / teamSz
   // Segments: front=$5/player, back=$5/player, total=$10/player (largest team basis)
   // Winning team always collects largest-team stake × number of losing teams.
+  const fmtMoney = v => `$${Number.isInteger(v) ? v : v.toFixed(2)}`;
+  // Per-player share of team winnings, keyed by player id — filled in below
+  // when it's a team game, left empty (all zero) otherwise.
+  const playerTeamPayout = {};
   let teamPayoutHtml = '';
   if (state.isTeamGame && state.teams && state.teams.length > 0) {
     const teamSizes   = state.teams.map(t => t.playerIds.length);
@@ -2001,7 +2005,17 @@ function finishRound() {
     const backW  = state.hasFrontBack ? segmentWinner('backDelta', backStake * (numTeams - 1)) : null;
     const totW   = segmentWinner('totalDelta', totalStake * (numTeams - 1));
 
-    const fmtMoney = v => `$${Number.isInteger(v) ? v : v.toFixed(2)}`;
+    // Give each player on a winning team their equal share of whatever
+    // that team won across the front/back/total segments.
+    [frontW, backW, totW].forEach(result => {
+      if (!result) return;
+      result.winners.forEach(t => {
+        const share = result.prize / t.playerIds.length;
+        t.playerIds.forEach(pid => {
+          playerTeamPayout[pid] = (playerTeamPayout[pid] || 0) + share;
+        });
+      });
+    });
 
     const fmtDelta = v => `${v >= 0 ? '+' : ''}${Math.round(v * 100) / 100}`;
     const segRow = (label, result) => {
@@ -2057,6 +2071,42 @@ function finishRound() {
       <div class="result-table-wrap"><table class="result-table"><tbody>${rows}</tbody></table></div>` : '';
   })();
 
+  // Combined per-player recap — team winnings share + individual payout,
+  // added together into one bottom-line total for each player.
+  const payoutRecapHtml = (() => {
+    const indivByPid = {};
+    indivPayoutRows.forEach(r => { indivByPid[r.id] = r.prize; });
+
+    const anyTeamPayout = Object.keys(playerTeamPayout).length > 0;
+    const anyIndivPayout = indivPayoutRows.length > 0;
+    if (!anyTeamPayout && !anyIndivPayout) return '';
+
+    const recap = withDelta.map(r => {
+      const team  = playerTeamPayout[r.id] || 0;
+      const indiv = indivByPid[r.id] || 0;
+      return { name: r.name, team, indiv, total: team + indiv };
+    }).sort((a, b) => b.total - a.total);
+
+    const rows = recap.map(r => `<tr>
+      <td>${r.name}</td>
+      ${state.isTeamGame ? `<td style="color:#8FBFAA">${fmtMoney(Math.round(r.team * 100) / 100)}</td>` : ''}
+      <td style="color:#8FBFAA">${fmtMoney(r.indiv)}</td>
+      <td style="color:var(--gold-light);font-weight:700">${fmtMoney(Math.round(r.total * 100) / 100)}</td>
+    </tr>`).join('');
+
+    return `
+      <div style="margin:14px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">🧾 Payout Recap</div>
+      <div class="result-table-wrap"><table class="result-table">
+        <thead><tr>
+          <td style="font-size:10px;color:#8FBFAA;">Player</td>
+          ${state.isTeamGame ? `<td style="font-size:10px;color:#8FBFAA;">Team</td>` : ''}
+          <td style="font-size:10px;color:#8FBFAA;">Indy</td>
+          <td style="font-size:10px;color:#8FBFAA;">Total</td>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>`;
+  })();
+
   // ── Winner headline ──
   const indivWinStr = indivTie
     ? `🤝 Individual tie — ${indivWinners.map(r => r.name.split(' ')[0]).join(' & ')}`
@@ -2075,6 +2125,7 @@ function finishRound() {
     <div style="margin-bottom:8px;font-size:14px;color:var(--gold-light);font-weight:700;">${indivWinStr}</div>
     <div class="result-table-wrap"><table class="result-table"><tbody>${indivRows}</tbody></table></div>
     ${indivPayoutHtml}
+    ${payoutRecapHtml}
     <div style="margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
       <button class="btn btn-outline btn-sm" onclick="showScreen('profiles')" style="color:#fff;border-color:rgba(255,255,255,0.3)">View Profiles</button>
       <button class="btn btn-outline btn-sm" onclick="newRound()" style="color:#fff;border-color:rgba(255,255,255,0.3)">New Game</button>

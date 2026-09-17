@@ -1839,6 +1839,37 @@ function renderPastGamesList() {
   }).join('');
 }
 
+function pastGamePlayerRow(p, rank) {
+  const diff    = p.points - p.quota;
+  const bClass  = diff > 0 ? 'badge-beat' : diff === 0 ? 'badge-met' : 'badge-miss';
+  const diffStr = diff > 0 ? `+${diff}` : `${diff}`;
+  const medal   = rank === 0 ? '🥇' : rank === 1 ? '🥈' : rank === 2 ? '🥉' : `${rank + 1}.`;
+  const qChange = p.quotaChange;
+  let qChangeStr = '—';
+  if (qChange != null && qChange !== 0) {
+    const col   = qChange > 0 ? '#2E6B54' : '#C0392B';
+    const arrow = qChange > 0 ? '▲' : '▼';
+    qChangeStr  = `<span style="color:${col};font-weight:700;">${arrow} ${Math.abs(qChange)}</span> → ${p.newQuota}`;
+  } else if (p.newQuota != null) {
+    qChangeStr = `— ${p.newQuota}`;
+  }
+  const frontDisp = p.front != null ? p.front : '–';
+  const backDisp  = p.back  != null ? p.back  : '–';
+  return `<tr>
+    <td>${medal} ${p.name}</td>
+    <td>${teeBadgeIcon(p.tee)} ${p.tee || '–'}</td>
+    <td>${p.quota}</td>
+    <td>${frontDisp}</td>
+    <td>${backDisp}</td>
+    <td><strong>${p.points}</strong></td>
+    <td><span class="badge ${bClass}">${diffStr}</span></td>
+    <td>${qChangeStr}</td>
+  </tr>`;
+}
+
+const PAST_GAME_TABLE_HEAD =
+  '<thead><tr><th>Player</th><th>Tee</th><th>Quota</th><th>Front</th><th>Back</th><th>Total</th><th>vs Q</th><th>New Q</th></tr></thead>';
+
 function viewPastGame(id) {
   const history = loadHistory();
   const h = history.find(x => x.id === id);
@@ -1848,42 +1879,33 @@ function viewPastGame(id) {
   document.getElementById('pg-modal-title').innerHTML =
     `<span style="cursor:pointer" onclick="renderPastGamesList()">← </span>${h.date}`;
 
-  const sorted = [...h.players].sort((a, b) => b.points - a.points);
-  const rows = sorted.map((p, i) => {
-    const diff    = p.points - p.quota;
-    const bClass  = diff > 0 ? 'badge-beat' : diff === 0 ? 'badge-met' : 'badge-miss';
-    const diffStr = diff > 0 ? `+${diff}` : `${diff}`;
-    const medal   = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
-    const qChange = p.quotaChange;
-    let qChangeStr = '—';
-    if (qChange != null && qChange !== 0) {
-      const col   = qChange > 0 ? '#2E6B54' : '#C0392B';
-      const arrow = qChange > 0 ? '▲' : '▼';
-      qChangeStr  = `<span style="color:${col};font-weight:700;">${arrow} ${Math.abs(qChange)}</span> → ${p.newQuota}`;
-    } else if (p.newQuota != null) {
-      qChangeStr = `— ${p.newQuota}`;
-    }
-    const frontDisp = p.front != null ? p.front : '–';
-    const backDisp  = p.back  != null ? p.back  : '–';
-    return `<tr>
-      <td>${medal} ${p.name}</td>
-      <td>${teeBadgeIcon(p.tee)} ${p.tee || '–'}</td>
-      <td>${p.quota}</td>
-      <td>${frontDisp}</td>
-      <td>${backDisp}</td>
-      <td><strong>${p.points}</strong></td>
-      <td><span class="badge ${bClass}">${diffStr}</span></td>
-      <td>${qChangeStr}</td>
-    </tr>`;
-  }).join('');
+  let html = '';
+  if (h.rulesForDay) {
+    html += `<div style="padding:8px 14px;font-size:12px;color:var(--ink-soft);border-bottom:1px solid var(--rule);background:#F9F7F3;">Rules for the day: <strong style="color:var(--ink);">${h.rulesForDay}</strong></div>`;
+  }
 
-  body.innerHTML = `
-    <div style="overflow-x:auto;">
-      <table class="history-table">
-        <thead><tr><th>Player</th><th>Tee</th><th>Quota</th><th>Front</th><th>Back</th><th>Total</th><th>vs Q</th><th>New Q</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-    </div>`;
+  if (h.isTeamGame && h.teams && h.teams.length > 0) {
+    // Full scorecard, reconstructed grouped by team — matches how the
+    // round actually played out, not just a flat player list.
+    html += h.teams.map(t => {
+      const teamPlayers = t.playerIds.map(pid => h.players.find(p => p.id === pid)).filter(Boolean);
+      const teamPts = teamPlayers.reduce((s, p) => s + p.points, 0);
+      const sortedTeam = [...teamPlayers].sort((a, b) => b.points - a.points);
+      const rows = sortedTeam.map((p, i) => pastGamePlayerRow(p, i)).join('');
+      return `
+        <div style="background:var(--green-deep);color:#fff;padding:7px 16px;font-size:11px;font-weight:700;letter-spacing:0.3px;">${t.name.toUpperCase()} · ${teamPts} pts</div>
+        <div style="overflow-x:auto;">
+          <table class="history-table">${PAST_GAME_TABLE_HEAD}<tbody>${rows}</tbody></table>
+        </div>`;
+    }).join('');
+  } else {
+    // Individual (no teams) round — one flat table sorted by points.
+    const sorted = [...h.players].sort((a, b) => b.points - a.points);
+    const rows = sorted.map((p, i) => pastGamePlayerRow(p, i)).join('');
+    html += `<div style="overflow-x:auto;"><table class="history-table">${PAST_GAME_TABLE_HEAD}<tbody>${rows}</tbody></table></div>`;
+  }
+
+  body.innerHTML = html;
 }
 
 // Grey out a Text button once tapped so it's clear who's already been sent
@@ -1974,6 +1996,9 @@ function finishRound() {
     date:     state.date,
     holes:    state.numHoles,
     quotaGame,
+    isTeamGame: !!state.isTeamGame,
+    teams:    state.isTeamGame && state.teams ? state.teams.map(t => ({ id: t.id, name: t.name, playerIds: t.playerIds })) : null,
+    rulesForDay: state.rulesForDay || null,
     players:  ranked.map(r => ({
       id:r.id, name:r.name, points:r.pts, tee:r.tee, defaultTee:r.defaultTee, teeAdj:r.teeAdj||0,
       front: parseInt(state.scores[r.id].front) || 0,

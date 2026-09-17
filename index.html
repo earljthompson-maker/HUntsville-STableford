@@ -2050,14 +2050,22 @@ function finishRound() {
     const fmtDelta = v => `${v >= 0 ? '+' : ''}${Math.round(v * 100) / 100}`;
     const segRow = (label, result) => {
       if (!result) return '';
-      const winNames = result.winners.map(t =>
-        `${t.name} (${t.members}) avg ${fmtDelta(result.key === 'frontDelta' ? t.frontDelta : result.key === 'backDelta' ? t.backDelta : t.totalDelta)}/player`
-      ).join(' / ');
+      const key = result.key;
+      const sorted = [...teamsWithSegments].sort((a, b) => b[key] - a[key]);
+      const topVal = sorted[0][key];
+      const runnerUp = sorted.find(t => t[key] !== topVal);
+      const marginStr = runnerUp
+        ? `<div style="font-size:9px;color:#8FBFAA;font-weight:400;margin-top:2px;">won by ${fmtDelta(topVal - runnerUp[key])}/player</div>`
+        : '';
+      const teamLines = sorted.map(t => {
+        const isWin = t[key] === topVal;
+        return `<div style="${isWin ? 'font-weight:700;color:var(--gold-light);' : 'color:#8FBFAA;'}">${isWin ? '🏆 ' : '　'}${t.name} (${t.members}): ${fmtDelta(t[key])}/player</div>`;
+      }).join('');
       const prize = result.tie ? `${fmtMoney(result.prize)} each (tie)` : fmtMoney(result.prize);
       return `<tr>
-        <td>${label}</td>
-        <td style="font-size:11px">${winNames}</td>
-        <td style="color:var(--gold-light);font-weight:700">${prize}</td>
+        <td style="vertical-align:top;">${label}${marginStr}</td>
+        <td style="font-size:11px;text-align:left">${teamLines}</td>
+        <td style="color:var(--gold-light);font-weight:700;vertical-align:top;">${prize}</td>
       </tr>`;
     };
 

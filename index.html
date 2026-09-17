@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Huntsville Stableford Game</title>
+<title>Huntsville Quota Game</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -303,12 +303,12 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
 
 <!-- NAV -->
 <nav class="nav">
-  <div class="nav-brand"><span class="flag">⛳</span><span class="title">Huntsville Stableford</span></div>
+  <div class="nav-brand"><span class="title">Huntsville Quota Game</span></div>
   <div style="flex:1;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;">
     <span id="sync-status" style="font-size:11px;color:var(--gold);">⏳ Syncing...</span>
   </div>
   <div class="nav-tabs">
-    <div class="nav-tab active" onclick="showScreen('profiles')" id="tab-profiles">👤 Profiles</div>
+    <div class="nav-tab active" onclick="showScreen('profiles')" id="tab-profiles">👤 Players</div>
     <div class="nav-tab" onclick="showScreen('setup')" id="tab-setup">🏌️ New Game</div>
     <div class="nav-tab" onclick="showScreen('scorecard')" id="tab-scorecard">📋 Scorecard</div>
     <div class="nav-tab" onclick="showScreen('net')" id="tab-net">💰 Net</div>
@@ -318,8 +318,11 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
 <!-- ═══════════ PROFILES SCREEN ═══════════ -->
 <div id="screen-profiles" class="screen active">
   <div class="page">
+    <div style="text-align:center;padding:6px 0 14px;">
+      <div style="font-size:20px;font-weight:800;color:var(--green-deep);letter-spacing:-0.3px;">Huntsville Quota Game</div>
+    </div>
     <div class="section-head">
-      <span class="section-title">Player Profiles</span>
+      <span class="section-title">Players</span>
       <button class="btn btn-primary btn-sm" onclick="openProfileModal()">+ Add Player</button>
     </div>
 

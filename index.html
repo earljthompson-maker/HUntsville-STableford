@@ -395,6 +395,9 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
         <div id="manual-teams-body"></div>
       </div>
     </div>
+    <div class="btn-row" style="margin-top:4px;">
+      <button class="btn btn-outline" style="width:100%;justify-content:center;" onclick="openPastGamesModal()">📅 Past Games</button>
+    </div>
   </div>
 </div>
 
@@ -533,6 +536,21 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
     </div>
     <div class="modal-foot">
       <button class="btn btn-outline btn-sm" onclick="closeNotifyModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ PAST GAMES MODAL ═══════════ -->
+<div class="modal-overlay" id="past-games-modal">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-head">
+      <span id="pg-modal-title">Past Games</span>
+      <button class="close-btn" onclick="closePastGamesModal()">×</button>
+    </div>
+    <div class="modal-body" id="pg-modal-body" style="max-height:65vh;overflow-y:auto;padding:0;">
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline btn-sm" onclick="closePastGamesModal()">Close</button>
     </div>
   </div>
 </div>
@@ -1695,6 +1713,86 @@ function openNotifyModal() {
 
 function closeNotifyModal() {
   document.getElementById('notify-modal').classList.remove('open');
+}
+
+// ══════════════════════════════════════
+// PAST GAMES
+// ══════════════════════════════════════
+function openPastGamesModal() {
+  renderPastGamesList();
+  document.getElementById('past-games-modal').classList.add('open');
+}
+
+function closePastGamesModal() {
+  document.getElementById('past-games-modal').classList.remove('open');
+}
+
+function renderPastGamesList() {
+  document.getElementById('pg-modal-title').textContent = 'Past Games';
+  const history = [...loadHistory()].reverse(); // newest first
+  const body = document.getElementById('pg-modal-body');
+  if (history.length === 0) {
+    body.innerHTML = '<div class="empty-state"><div class="icon">📅</div><p>No past games yet.</p></div>';
+    return;
+  }
+  body.innerHTML = history.map(h => {
+    const sorted = [...h.players].sort((a, b) => b.points - a.points);
+    const winner = sorted[0];
+    return `<div class="player-pick-row" style="cursor:pointer;padding:12px 16px;" onclick="viewPastGame('${h.id}')">
+      <div style="flex:1;min-width:0;">
+        <div class="pick-name">${h.date}</div>
+        <div class="pick-meta">${h.players.length} players · ${h.holes} holes · 🏆 ${winner ? winner.name + ' (' + winner.points + ' pts)' : '—'}</div>
+      </div>
+      <div style="font-size:20px;color:var(--ink-soft);flex-shrink:0;">›</div>
+    </div>`;
+  }).join('');
+}
+
+function viewPastGame(id) {
+  const history = loadHistory();
+  const h = history.find(x => x.id === id);
+  const body = document.getElementById('pg-modal-body');
+  if (!h) return;
+
+  document.getElementById('pg-modal-title').innerHTML =
+    `<span style="cursor:pointer" onclick="renderPastGamesList()">← </span>${h.date}`;
+
+  const sorted = [...h.players].sort((a, b) => b.points - a.points);
+  const rows = sorted.map((p, i) => {
+    const diff    = p.points - p.quota;
+    const bClass  = diff > 0 ? 'badge-beat' : diff === 0 ? 'badge-met' : 'badge-miss';
+    const diffStr = diff > 0 ? `+${diff}` : `${diff}`;
+    const medal   = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
+    const qChange = p.quotaChange;
+    let qChangeStr = '—';
+    if (qChange != null && qChange !== 0) {
+      const col   = qChange > 0 ? '#2E6B54' : '#C0392B';
+      const arrow = qChange > 0 ? '▲' : '▼';
+      qChangeStr  = `<span style="color:${col};font-weight:700;">${arrow} ${Math.abs(qChange)}</span> → ${p.newQuota}`;
+    } else if (p.newQuota != null) {
+      qChangeStr = `— ${p.newQuota}`;
+    }
+    const frontDisp = p.front != null ? p.front : '–';
+    const backDisp  = p.back  != null ? p.back  : '–';
+    return `<tr>
+      <td>${medal} ${p.name}</td>
+      <td>${teeBadgeIcon(p.tee)} ${p.tee || '–'}</td>
+      <td>${p.quota}</td>
+      <td>${frontDisp}</td>
+      <td>${backDisp}</td>
+      <td><strong>${p.points}</strong></td>
+      <td><span class="badge ${bClass}">${diffStr}</span></td>
+      <td>${qChangeStr}</td>
+    </tr>`;
+  }).join('');
+
+  body.innerHTML = `
+    <div style="overflow-x:auto;">
+      <table class="history-table">
+        <thead><tr><th>Player</th><th>Tee</th><th>Quota</th><th>Front</th><th>Back</th><th>Total</th><th>vs Q</th><th>New Q</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
 }
 
 // Grey out a Text button once tapped so it's clear who's already been sent

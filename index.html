@@ -1733,8 +1733,7 @@ function closeNotifyModal() {
 // ══════════════════════════════════════
 // PAST GAMES
 // ══════════════════════════════════════
-// ══════════════════════════════════════
-// NET RESULTS — paid vs cashed across all games
+// NET RESULTS — paid vs cashed across all games, split by Team / Indy / Total
 // ══════════════════════════════════════
 function renderNetResults() {
   const profiles = loadProfiles();
@@ -1742,17 +1741,29 @@ function renderNetResults() {
   const body = document.getElementById('net-results-body');
 
   const stats = profiles.map(p => {
-    let paid = 0, won = 0, rounds = 0;
+    let teamPaid = 0, teamWon = 0, indyPaid = 0, indyWon = 0, rounds = 0;
     history.forEach(h => {
       const rp = h.players.find(x => x.id === p.id);
       if (!rp) return;
       rounds++;
-      paid += rp.paid || 0;
-      won  += rp.won  || 0;
+      if (rp.teamPaid !== undefined || rp.indyPaid !== undefined) {
+        // Current format: team and indy tracked separately.
+        teamPaid += rp.teamPaid || 0;
+        teamWon  += rp.teamWon  || 0;
+        indyPaid += rp.indyPaid || 0;
+        indyWon  += rp.indyWon  || 0;
+      } else {
+        // Older rounds only recorded a combined paid/won — count it as indy
+        // since that's the only component every round always had.
+        indyPaid += rp.paid || 0;
+        indyWon  += rp.won  || 0;
+      }
     });
-    const net = won - paid;
-    const pct = paid > 0 ? (net / paid) * 100 : 0;
-    return { name: p.name, paid, won, net, pct, rounds };
+    const totalPaid = teamPaid + indyPaid;
+    const totalWon  = teamWon + indyWon;
+    const net = totalWon - totalPaid;
+    const pct = totalPaid > 0 ? (net / totalPaid) * 100 : 0;
+    return { name: p.name, rounds, teamPaid, teamWon, indyPaid, indyWon, totalPaid, totalWon, net, pct };
   }).filter(s => s.rounds > 0)
     .sort((a, b) => b.net - a.net);
 
@@ -1761,27 +1772,40 @@ function renderNetResults() {
     return;
   }
 
-  const rows = stats.map(s => {
-    const color  = s.net > 0 ? '#1B4D3E' : s.net < 0 ? '#C0392B' : '#999';
-    const netStr = `${s.net >= 0 ? '+' : ''}$${Math.round(s.net)}`;
-    const pctStr = `${s.pct >= 0 ? '+' : ''}${s.pct.toFixed(0)}%`;
-    return `<tr>
-      <td>${s.name}</td>
-      <td>${s.rounds}</td>
-      <td>$${Math.round(s.paid)}</td>
-      <td>$${Math.round(s.won)}</td>
-      <td style="color:${color};font-weight:700;">${netStr}</td>
-      <td style="color:${color};font-weight:700;">${pctStr}</td>
-    </tr>`;
+  const fmt = v => `$${Math.round(v)}`;
+  const cards = stats.map(s => {
+    const netColor = s.net > 0 ? '#1B4D3E' : s.net < 0 ? '#C0392B' : '#999';
+    const netStr   = `${s.net >= 0 ? '+' : ''}${fmt(s.net)}`;
+    const pctStr   = `${s.pct >= 0 ? '+' : ''}${s.pct.toFixed(0)}%`;
+    const teamNet  = s.teamWon - s.teamPaid;
+    const indyNet  = s.indyWon - s.indyPaid;
+    const rowColor = v => v > 0 ? '#2E6B54' : v < 0 ? '#C0392B' : '#999';
+    return `
+    <div style="border-bottom:1px solid var(--rule);padding:12px 14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div style="font-size:14px;font-weight:700;">${s.name} <span style="font-weight:400;color:var(--ink-soft);font-size:11px;">(${s.rounds} round${s.rounds!==1?'s':''})</span></div>
+        <div style="text-align:right;">
+          <div style="font-size:16px;font-weight:800;color:${netColor};">${netStr}</div>
+          <div style="font-size:11px;font-weight:700;color:${netColor};">${pctStr}</div>
+        </div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead><tr style="color:var(--ink-soft);">
+          <td></td><td style="text-align:right;">Paid</td><td style="text-align:right;">Cashed</td><td style="text-align:right;">Net</td>
+        </tr></thead>
+        <tbody>
+          <tr><td>Team</td><td style="text-align:right;">${fmt(s.teamPaid)}</td><td style="text-align:right;">${fmt(s.teamWon)}</td><td style="text-align:right;color:${rowColor(teamNet)};font-weight:700;">${teamNet>=0?'+':''}${fmt(teamNet)}</td></tr>
+          <tr><td>Indy</td><td style="text-align:right;">${fmt(s.indyPaid)}</td><td style="text-align:right;">${fmt(s.indyWon)}</td><td style="text-align:right;color:${rowColor(indyNet)};font-weight:700;">${indyNet>=0?'+':''}${fmt(indyNet)}</td></tr>
+          <tr style="border-top:1px solid var(--rule);font-weight:700;"><td>Total</td><td style="text-align:right;">${fmt(s.totalPaid)}</td><td style="text-align:right;">${fmt(s.totalWon)}</td><td style="text-align:right;color:${netColor};">${netStr}</td></tr>
+        </tbody>
+      </table>
+    </div>`;
   }).join('');
 
   body.innerHTML = `
-    <table class="history-table">
-      <thead><tr><th>Player</th><th>Rounds</th><th>Paid</th><th>Cashed</th><th>Net $</th><th>Net %</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-    <div style="padding:10px 14px;font-size:11px;color:var(--ink-soft);border-top:1px solid var(--rule);">
-      Net % = net $ ÷ total paid in. Rounds played before this tracker was added won't have paid/cashed data.
+    ${cards}
+    <div style="padding:10px 14px;font-size:11px;color:var(--ink-soft);">
+      Net % = net $ ÷ total paid in. Rounds played before this tracker was added count toward Indy only (no Team/Indy split was recorded yet).
     </div>`;
 }
 
@@ -1955,7 +1979,7 @@ function finishRound() {
       front: parseInt(state.scores[r.id].front) || 0,
       back:  state.scores[r.id].back !== null ? (parseInt(state.scores[r.id].back) || 0) : null,
       quota:r.quota, newQuota:r.newQuota, quotaChange:r.quotaChange,
-      paid: 10, won: 0 // indy buy-in always applies; team stake/winnings filled in below
+      teamPaid: 0, teamWon: 0, indyPaid: 10, indyWon: 0 // indy buy-in always applies; team stake/winnings filled in below
     }))
   };
   // Quick lookup so the payout math further down can fill in each
@@ -2027,7 +2051,7 @@ function finishRound() {
     state.teams.forEach(t => {
       const cost = teamPlayerCosts.find(tc => tc.teamId === t.id);
       t.playerIds.forEach(pid => {
-        if (entryPlayerById[pid]) entryPlayerById[pid].paid += cost.perPlayer;
+        if (entryPlayerById[pid]) entryPlayerById[pid].teamPaid += cost.perPlayer;
       });
     });
 
@@ -2089,7 +2113,7 @@ function finishRound() {
         const share = result.prize / t.playerIds.length;
         t.playerIds.forEach(pid => {
           playerTeamPayout[pid] = (playerTeamPayout[pid] || 0) + share;
-          if (entryPlayerById[pid]) entryPlayerById[pid].won += share;
+          if (entryPlayerById[pid]) entryPlayerById[pid].teamWon += share;
         });
       });
     });
@@ -2257,11 +2281,13 @@ function finishRound() {
   // Record individual payout winnings, then save the completed history
   // entry (now that paid/won are fully filled in for the Net Results tab).
   indivPayoutRows.forEach(r => {
-    if (entryPlayerById[r.id]) entryPlayerById[r.id].won += r.prize;
+    if (entryPlayerById[r.id]) entryPlayerById[r.id].indyWon += r.prize;
   });
   entry.players.forEach(ep => {
-    ep.paid = Math.round(ep.paid * 100) / 100;
-    ep.won  = Math.round(ep.won);
+    ep.teamPaid = Math.round(ep.teamPaid * 100) / 100;
+    ep.teamWon  = Math.round(ep.teamWon);
+    ep.indyPaid = Math.round(ep.indyPaid * 100) / 100;
+    ep.indyWon  = Math.round(ep.indyWon);
   });
   saveHistory(history);
 

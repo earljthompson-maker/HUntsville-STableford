@@ -1805,7 +1805,6 @@ function finishRound() {
 
   // ── Team winner: which team wins Front / Back / Total ──
   let teamSection = '';
-  let resultHeadline = `${withDelta[0].name} wins!`; // default for individual-only games
   const fmtMoney = v => `$${Math.round(v)}`;
   // What players OWE (team buy-in) keeps exact cents — e.g. $26.67 for an
   // uneven team's top-up — since that's real money someone has to hand
@@ -1957,22 +1956,6 @@ function finishRound() {
       <div class="result-table-wrap"><table class="result-table">
         <tbody>${costRows}</tbody>
       </table></div>`;
-
-    // ── Headline: which team won each segment (replaces the old, duplicated
-    // "Team X wins!" statement that used to appear both at the very top and
-    // again inside the Team Result section) ──
-    const segName = (result) => result.tie
-      ? result.winners.map(t => t.name).join(' & ') + ' (tie)'
-      : result.winners[0].name;
-    if (twoTeamGame) {
-      resultHeadline = `${segName(totW)} wins!`;
-    } else {
-      const parts = [];
-      if (frontW) parts.push(`${segName(frontW)} wins Front`);
-      if (backW)  parts.push(`${segName(backW)} wins Back`);
-      if (totW)   parts.push(`${segName(totW)} wins Total`);
-      resultHeadline = parts.join(' · ');
-    }
 
     // ── Ranked "Team Result" table, by Total variance ──
     const rankedTeams = [...teamsWithSegments].sort((a, b) => b.totalDelta - a.totalDelta);
@@ -2146,7 +2129,7 @@ function finishRound() {
 
   banner.innerHTML = `
     <div class="result-crown">⛳</div>
-    <div class="result-winner" style="${state.isTeamGame && !twoTeamGame ? 'font-size:16px;' : ''}">${resultHeadline}</div>
+    <div class="result-winner">RESULTS</div>
     <div class="result-score">${state.date}</div>
     ${teamSection}
     ${teamPayoutHtml}

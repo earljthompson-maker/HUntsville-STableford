@@ -2061,13 +2061,13 @@ function finishRound() {
       </tr>`;
     };
 
-    // Player cost breakdown
+    // Player cost breakdown — team stake plus the flat $10 individual buy-in
     const costRows = teamPlayerCosts.map(tc => {
-      const extraStr = tc.extra > 0 ? ` <span style="color:#f08080;font-size:10px">(+${fmtStake(tc.extra)} top-up)</span>` : '';
+      const extraStr  = tc.extra > 0 ? ` <span style="color:#f08080;font-size:10px">(+${fmtStake(tc.extra)} top-up)</span>` : '';
+      const totalOwed = tc.perPlayer + 10;
       return `<tr>
-        <td style="font-size:11px">${tc.name} — ${tc.members}</td>
-        <td style="font-size:11px;color:#8FBFAA">${tc.sz} players</td>
-        <td style="font-size:11px;color:#8FBFAA">${fmtStake(tc.perPlayer)}/player${extraStr}</td>
+        <td style="font-size:11px">${tc.name} — ${tc.members}<br><span style="color:#8FBFAA">${tc.sz} players</span></td>
+        <td style="font-size:11px;color:#8FBFAA">${fmtStake(tc.perPlayer)} team${extraStr}<br>+ $10 indy = <strong style="color:#fff">${fmtStake(totalOwed)}</strong>/player</td>
       </tr>`;
     }).join('');
 

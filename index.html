@@ -1151,12 +1151,15 @@ function getTeamConfigs(n) {
     }
   }
   partition(n, 2, []);
-  // Remove duplicates (same multiset)
+  // Remove duplicates (same multiset), and any config where team sizes
+  // differ by more than 1 player (e.g. reject 4/3/2 — keep only 4/3, 4/4,
+  // 3/3, etc. so no team is meaningfully bigger than another).
   const seen = new Set();
   return configs.filter(cfg => {
     const key = [...cfg].sort().join(',');
     if (seen.has(key)) return false;
-    seen.add(key); return true;
+    seen.add(key);
+    return (Math.max(...cfg) - Math.min(...cfg)) <= 1;
   }).map(cfg => {
     const sorted = [...cfg].sort((a,b)=>b-a); // largest teams first
     const counts = {};

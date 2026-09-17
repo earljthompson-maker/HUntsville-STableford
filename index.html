@@ -367,6 +367,7 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
               <label>Team Assignment</label>
               <select id="team-assign" onchange="onTeamAssignChange()">
                 <option value="auto">Auto — balance by variance</option>
+                <option value="random">100% Random — no variance balancing</option>
                 <option value="blind">Blind draw — random at end</option>
                 <option value="manual">Manual — I'll assign teams</option>
               </select>
@@ -1297,6 +1298,26 @@ function autoAssignTeams(players, sizes) {
   return teams;
 }
 
+// Fully random team assignment — no quota/variance balancing at all.
+// Just shuffles everyone and deals them into teams of the given sizes.
+function randomAssignTeams(players, sizes) {
+  const shuffled = [...players];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  const sortedSizes = [...sizes].sort((a,b)=>b-a);
+  const teams = sortedSizes.map((sz, i) => ({ id: i+1, name: `Team ${i+1}`, players: [], target: sz }));
+  shuffled.forEach(p => {
+    const available = teams.filter(t => t.players.length < t.target);
+    // Pick uniformly at random among teams that still have room, rather
+    // than always the most-open team, so the deal has no systematic bias.
+    const pick = available[Math.floor(Math.random() * available.length)];
+    pick.players.push(p);
+  });
+  return teams;
+}
+
 // Manual assignment state
 let manualTeams = []; // [{id,name,players:[]}]
 
@@ -1415,6 +1436,10 @@ function startRound() {
       // Same variance-based snake draft as auto, just hidden during the round
       const autoTeams = autoAssignTeams(players, cfgSizes);
       teams = autoTeams.map(t => ({ id: t.id, name: t.name, playerIds: t.players.map(p => p.id) }));
+    } else if (assignMethod === 'random') {
+      // 100% random — no quota/variance balancing at all
+      const randTeams = randomAssignTeams(players, cfgSizes);
+      teams = randTeams.map(t => ({ id: t.id, name: t.name, playerIds: t.players.map(p => p.id) }));
     } else {
       // Auto — balance by variance
       const autoTeams = autoAssignTeams(players, cfgSizes);

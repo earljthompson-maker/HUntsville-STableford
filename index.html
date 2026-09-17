@@ -821,12 +821,7 @@ function renderProfiles() {
   noP.style.display = 'none';
 
   const history = loadHistory();
-  const sortedProfiles = [...profiles].sort((a, b) => {
-    const aRounds = history.filter(r => r.players.some(rp => rp.id === a.id)).length;
-    const bRounds = history.filter(r => r.players.some(rp => rp.id === b.id)).length;
-    if (bRounds !== aRounds) return bRounds - aRounds;
-    return a.name.localeCompare(b.name);
-  });
+  const sortedProfiles = [...profiles].sort((a, b) => a.name.localeCompare(b.name));
   grid.innerHTML = sortedProfiles.map((p) => {
     const idx      = profiles.indexOf(p);
     const color    = PLAYER_COLORS[idx % PLAYER_COLORS.length];
@@ -1084,13 +1079,7 @@ function renderSetup() {
 
   document.getElementById('player-panel-head').textContent = `Select Players${setupSelected.length > 0 ? ' — ' + setupSelected.length + ' selected' : ''}`;
 
-  const historyForSort = loadHistory();
-  const sortedForPicker = [...profiles].sort((a, b) => {
-    const aR = historyForSort.filter(r => r.players.some(rp => rp.id === a.id)).length;
-    const bR = historyForSort.filter(r => r.players.some(rp => rp.id === b.id)).length;
-    if (bR !== aR) return bR - aR;
-    return a.name.localeCompare(b.name);
-  });
+  const sortedForPicker = [...profiles].sort((a, b) => a.name.localeCompare(b.name));
   picker.innerHTML = sortedForPicker.map((p) => {
     const idx   = profiles.indexOf(p);
     const color = PLAYER_COLORS[idx % PLAYER_COLORS.length];
@@ -1942,6 +1931,10 @@ function finishRound() {
   // Segments: front=$5/player, back=$5/player, total=$10/player (largest team basis)
   // Winning team always collects largest-team stake × number of losing teams.
   const fmtMoney = v => `$${Math.round(v)}`;
+  // What players OWE (team buy-in) keeps exact cents — e.g. $26.67 for an
+  // uneven team's top-up — since that's real money someone has to hand
+  // over; only payout/winnings amounts round to whole dollars.
+  const fmtStake = v => Number.isInteger(v) ? `$${v}` : `$${v.toFixed(2)}`;
   // Per-player share of team winnings, keyed by player id — filled in below
   // when it's a team game, left empty (all zero) otherwise.
   const playerTeamPayout = {};
@@ -1973,8 +1966,8 @@ function finishRound() {
         teamId: t.id,
         name: t.name,
         sz,
-        perPlayer: Math.round(perPlayer),
-        extra: Math.round(extra),
+        perPlayer: Math.round(perPlayer * 100) / 100,
+        extra: Math.round(extra * 100) / 100,
         members: t.playerIds.map(pid => state.players.find(p=>p.id===pid)?.name.split(' ')[0]).join(' & ')
       };
     });
@@ -2052,11 +2045,11 @@ function finishRound() {
 
     // Player cost breakdown
     const costRows = teamPlayerCosts.map(tc => {
-      const extraStr = tc.extra > 0 ? ` <span style="color:#f08080;font-size:10px">(+${fmtMoney(tc.extra)} top-up)</span>` : '';
+      const extraStr = tc.extra > 0 ? ` <span style="color:#f08080;font-size:10px">(+${fmtStake(tc.extra)} top-up)</span>` : '';
       return `<tr>
         <td style="font-size:11px">${tc.name} — ${tc.members}</td>
         <td style="font-size:11px;color:#8FBFAA">${tc.sz} players</td>
-        <td style="font-size:11px;color:#8FBFAA">${fmtMoney(tc.perPlayer)}/player${extraStr}</td>
+        <td style="font-size:11px;color:#8FBFAA">${fmtStake(tc.perPlayer)}/player${extraStr}</td>
       </tr>`;
     }).join('');
 

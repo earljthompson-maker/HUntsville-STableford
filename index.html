@@ -1803,39 +1803,189 @@ function finishRound() {
   const indivWinners  = withDelta.filter(r => r.delta === topIndivDelta);
   const indivTie      = indivWinners.length > 1;
 
-  // ── Team winner: highest average delta per player ──
+  // ── Team winner: which team wins Front / Back / Total ──
   let teamSection = '';
-  let teamWinnerLabel = '';
+  let resultHeadline = `${withDelta[0].name} wins!`; // default for individual-only games
+  const fmtMoney = v => `$${Math.round(v)}`;
+  // What players OWE (team buy-in) keeps exact cents — e.g. $26.67 for an
+  // uneven team's top-up — since that's real money someone has to hand
+  // over; only payout/winnings amounts round to whole dollars.
+  const fmtStake = v => Number.isInteger(v) ? `$${v}` : `$${v.toFixed(2)}`;
+  // Per-player share of team winnings, keyed by player id — filled in below
+  // when it's a team game, left empty (all zero) otherwise.
+  const playerTeamPayout = {};
+  let teamPayoutHtml = '';
+  let twoTeamGame = false;
+
   if (state.isTeamGame && state.teams && state.teams.length > 0) {
-    const teamsWithDelta = state.teams.map(t => {
+    const teamSizes   = state.teams.map(t => t.playerIds.length);
+    const largestSz   = Math.max(...teamSizes);
+    const numTeams    = state.teams.length;
+    // Head-to-head (exactly 2 teams): only the Total variance decides the
+    // winner — Front/Back are not scored separately, and the whole pot
+    // rides on Total. With 3+ teams, the pot splits into three segments
+    // (Front $5, Back $5, Total $10 per player) so each nine — and the
+    // overall round — has its own winner. Either way the full team stake
+    // is $20/player on the largest team.
+    twoTeamGame = numTeams === 2;
+    const frontStake  = twoTeamGame ? 0 : largestSz * 5;
+    const backStake   = twoTeamGame ? 0 : largestSz * 5;
+    const totalStake  = twoTeamGame ? largestSz * 20 : largestSz * 10;
+    const fullStake   = frontStake + backStake + totalStake; // always $20/player on the largest team
+
+    // Per-player costs for each team
+    const teamPlayerCosts = state.teams.map(t => {
+      const sz        = t.playerIds.length;
+      const teamFull  = fullStake; // each team puts in the same total
+      const perPlayer = teamFull / sz;
+      const standard  = fullStake / largestSz; // what largest-team player pays
+      const extra     = perPlayer - standard;
+      return {
+        teamId: t.id,
+        name: t.name,
+        sz,
+        perPlayer: Math.round(perPlayer * 100) / 100,
+        extra: Math.round(extra * 100) / 100,
+        members: t.playerIds.map(pid => state.players.find(p=>p.id===pid)?.name.split(' ')[0]).join(' & ')
+      };
+    });
+
+    // Segment deltas per team (for determining winner)
+    // For unequal teams, compare AVERAGE delta per player so size doesn't advantage either team
+    const teamsWithSegments = state.teams.map(t => {
       const sz = t.playerIds.length;
-      const rawDelta = t.playerIds.reduce((sum, pid) => {
+      // Front quota = floor(quota/2), Back quota = ceil(quota/2)
+      // Team quota = sum of all players' front/back quotas
+      const frontRaw = t.playerIds.reduce((s, pid) => {
         const p = state.players.find(x => x.id === pid);
-        return sum + (totalPoints(pid) - (p?.quota || 0));
+        const frontQ = p?.quota != null ? Math.floor(p.quota / 2) : 0;
+        return s + ((parseInt(state.scores[pid]?.front) || 0) - frontQ);
       }, 0);
-      const combinedDelta = rawDelta / sz; // average per player
+      const backRaw = state.hasFrontBack ? t.playerIds.reduce((s, pid) => {
+        const p = state.players.find(x => x.id === pid);
+        const backQ = p?.quota != null ? Math.ceil(p.quota / 2) : 0;
+        return s + ((parseInt(state.scores[pid]?.back) || 0) - backQ);
+      }, 0) : null;
+      const totalRaw = t.playerIds.reduce((s, pid) => {
+        const p = state.players.find(x => x.id === pid);
+        return s + (totalPoints(pid) - (p?.quota || 0));
+      }, 0);
+      // Average per player (used for winner determination when teams are unequal)
+      const frontDelta = frontRaw / sz;
+      const backDelta  = backRaw !== null ? backRaw / sz : null;
+      const totalDelta = totalRaw / sz;
+      const cost = teamPlayerCosts.find(tc => tc.teamId === t.id);
       const combinedPts = teamTotal(t);
-      const members = t.playerIds.map(pid => state.players.find(p => p.id === pid)?.name.split(' ')[0]).join(' & ');
-      return { ...t, combinedDelta, rawDelta, sz, combinedPts, members };
-    }).sort((a, b) => b.combinedDelta - a.combinedDelta);
+      return { ...t, frontDelta, backDelta, totalDelta,
+        frontRaw, backRaw, totalRaw, combinedPts,
+        members: cost.members, perPlayer: cost.perPlayer, extra: cost.extra, sz };
+    });
 
-    const topDelta   = teamsWithDelta[0].combinedDelta;
-    const teamWinners = teamsWithDelta.filter(t => t.combinedDelta === topDelta);
-    const teamTie     = teamWinners.length > 1;
+    // Segment winner: pot = full contribution from every team (stake ×
+    // numTeams), so the winner collects the whole pot — their own stake
+    // plus everyone else's. This is a TOTAL payout, not net winnings, so
+    // total paid out always equals total paid in (aside from whole-dollar
+    // rounding on splits/ties).
+    const segmentWinner = (key, pot) => {
+      const sorted  = [...teamsWithSegments].sort((a,b) => b[key] - a[key]);
+      const top     = sorted[0][key];
+      const winners = sorted.filter(t => t[key] === top);
+      const tie     = winners.length > 1;
+      const prize   = tie ? Math.round(pot / winners.length) : pot;
+      return { winners, tie, pot, prize, key };
+    };
 
-    const teamWinStr = teamTie
-      ? `🤝 Tie — ${teamWinners.map(t => t.name).join(' & ')} split the pot!`
-      : `${teamsWithDelta[0].name} wins!`;
-    teamWinnerLabel = teamTie
-      ? teamWinners.map(t => t.name).join(' & ')
-      : teamsWithDelta[0].name;
+    // Head-to-head games skip Front/Back entirely — only Total is scored.
+    const frontW = twoTeamGame ? null : segmentWinner('frontDelta', frontStake * numTeams);
+    const backW  = (!twoTeamGame && state.hasFrontBack) ? segmentWinner('backDelta', backStake * numTeams) : null;
+    const totW   = segmentWinner('totalDelta', totalStake * numTeams);
 
-    const teamRows = teamsWithDelta.map((t, i) => {
-      const isTied  = t.combinedDelta === topDelta;
-      const medal   = teamTie && isTied ? '🤝' : i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`;
-      const dColor  = t.combinedDelta > 0 ? '#6fcf97' : t.combinedDelta < 0 ? '#f08080' : '#8FBFAA';
-      const avgStr  = `${t.combinedDelta >= 0 ? '+' : ''}${(Math.round(t.combinedDelta * 10) / 10)}`;
-      const rawStr  = `${t.rawDelta >= 0 ? '+' : ''}${t.rawDelta}`;
+    // Give each player on a winning team their equal share of whatever
+    // that team won across the front/back/total segments.
+    [frontW, backW, totW].forEach(result => {
+      if (!result) return;
+      result.winners.forEach(t => {
+        const share = result.prize / t.playerIds.length;
+        t.playerIds.forEach(pid => {
+          playerTeamPayout[pid] = (playerTeamPayout[pid] || 0) + share;
+        });
+      });
+    });
+
+    const fmtDelta = v => `${v >= 0 ? '+' : ''}${Math.round(v * 100) / 100}`;
+    const segRow = (label, result) => {
+      if (!result) return '';
+      const key = result.key;
+      const sorted = [...teamsWithSegments].sort((a, b) => b[key] - a[key]);
+      const topVal = sorted[0][key];
+      const runnerUp = sorted.find(t => t[key] !== topVal);
+      const marginStr = runnerUp
+        ? `<div style="font-size:9px;color:#8FBFAA;font-weight:400;margin-top:2px;">won by ${fmtDelta(topVal - runnerUp[key])}/player</div>`
+        : '';
+      const teamLines = sorted.map(t => {
+        const isWin = t[key] === topVal;
+        return `<div style="${isWin ? 'font-weight:700;color:var(--gold-light);' : 'color:#8FBFAA;'}">${isWin ? '🏆 ' : '　'}${t.name} (${t.members}): ${fmtDelta(t[key])}/player</div>`;
+      }).join('');
+      const prize = result.tie ? `${fmtMoney(result.prize)} each (tie)` : fmtMoney(result.prize);
+      return `<tr>
+        <td style="vertical-align:top;">${label}${marginStr}</td>
+        <td style="font-size:11px;text-align:left">${teamLines}</td>
+        <td style="color:var(--gold-light);font-weight:700;vertical-align:top;">${prize}</td>
+      </tr>`;
+    };
+
+    // Player cost breakdown — team stake plus the flat $10 individual buy-in
+    const costRows = teamPlayerCosts.map(tc => {
+      const extraStr  = tc.extra > 0 ? ` <span style="color:#f08080;font-size:10px">(+${fmtStake(tc.extra)} top-up)</span>` : '';
+      const totalOwed = tc.perPlayer + 10;
+      return `<tr>
+        <td style="font-size:11px">${tc.name} — ${tc.members}<br><span style="color:#8FBFAA">${tc.sz} players</span></td>
+        <td style="font-size:11px;color:#8FBFAA">${fmtStake(tc.perPlayer)} team${extraStr}<br>+ $10 indy = <strong style="color:#fff">${fmtStake(totalOwed)}</strong>/player</td>
+      </tr>`;
+    }).join('');
+
+    teamPayoutHtml = `
+      <div style="margin:14px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">💰 Team Payouts</div>
+      <div class="result-table-wrap"><table class="result-table">
+        <tbody>
+          ${segRow('Front 9', frontW)}
+          ${segRow('Back 9', backW)}
+          ${segRow(twoTeamGame ? 'Team Pot' : 'Total', totW)}
+        </tbody>
+      </table></div>
+      <div style="margin:8px 0 4px;font-size:10px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">Player Stakes</div>
+      <div class="result-table-wrap"><table class="result-table">
+        <tbody>${costRows}</tbody>
+      </table></div>`;
+
+    // ── Headline: which team won each segment (replaces the old, duplicated
+    // "Team X wins!" statement that used to appear both at the very top and
+    // again inside the Team Result section) ──
+    const segName = (result) => result.tie
+      ? result.winners.map(t => t.name).join(' & ') + ' (tie)'
+      : result.winners[0].name;
+    if (twoTeamGame) {
+      resultHeadline = `${segName(totW)} wins!`;
+    } else {
+      const parts = [];
+      if (frontW) parts.push(`${segName(frontW)} wins Front`);
+      if (backW)  parts.push(`${segName(backW)} wins Back`);
+      if (totW)   parts.push(`${segName(totW)} wins Total`);
+      resultHeadline = parts.join(' · ');
+    }
+
+    // ── Ranked "Team Result" table, by Total variance ──
+    const rankedTeams = [...teamsWithSegments].sort((a, b) => b.totalDelta - a.totalDelta);
+    const topTotal = rankedTeams[0].totalDelta;
+    const totalTieTeams = rankedTeams.filter(t => t.totalDelta === topTotal);
+    const totalTie = totalTieTeams.length > 1;
+
+    const teamRows = rankedTeams.map((t, i) => {
+      const isTied  = t.totalDelta === topTotal;
+      const medal   = totalTie && isTied ? '🤝' : i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`;
+      const dColor  = t.totalDelta > 0 ? '#6fcf97' : t.totalDelta < 0 ? '#f08080' : '#8FBFAA';
+      const avgStr  = `${t.totalDelta >= 0 ? '+' : ''}${(Math.round(t.totalDelta * 10) / 10)}`;
+      const rawStr  = `${t.totalRaw >= 0 ? '+' : ''}${t.totalRaw}`;
       return `<tr>
         <td>${medal} ${t.name}</td>
         <td style="color:#8FBFAA;font-size:11px">${t.members}</td>
@@ -1849,7 +1999,6 @@ function finishRound() {
     teamSection = `
       <div style="margin:14px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">⛳ Team Result</div>
       ${blindNote}
-      <div style="font-size:18px;font-weight:800;color:var(--gold-light);margin-bottom:10px;">${teamWinStr}</div>
       <div class="result-table-wrap"><table class="result-table"><tbody>${teamRows}</tbody></table></div>
       <div style="margin:10px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">🏌️ Individual Result</div>`;
   }
@@ -1939,161 +2088,6 @@ function finishRound() {
     return rows;
   })();
 
-  // ── Team payouts ──
-  // All teams contribute as if they have the same size as the LARGEST team.
-  // Smaller teams top up per-player: extra = (largestSz - teamSz) * $20 / teamSz
-  // Segments: front=$5/player, back=$5/player, total=$10/player (largest team basis)
-  // Winning team always collects largest-team stake × number of losing teams.
-  const fmtMoney = v => `$${Math.round(v)}`;
-  // What players OWE (team buy-in) keeps exact cents — e.g. $26.67 for an
-  // uneven team's top-up — since that's real money someone has to hand
-  // over; only payout/winnings amounts round to whole dollars.
-  const fmtStake = v => Number.isInteger(v) ? `$${v}` : `$${v.toFixed(2)}`;
-  // Per-player share of team winnings, keyed by player id — filled in below
-  // when it's a team game, left empty (all zero) otherwise.
-  const playerTeamPayout = {};
-  let teamPayoutHtml = '';
-  if (state.isTeamGame && state.teams && state.teams.length > 0) {
-    const teamSizes   = state.teams.map(t => t.playerIds.length);
-    const largestSz   = Math.max(...teamSizes);
-    const numTeams    = state.teams.length;
-    // Head-to-head (exactly 2 teams): only the Total variance decides the
-    // winner — Front/Back are not scored separately, and the whole pot
-    // rides on Total. With 3+ teams, the pot splits into three segments
-    // (Front $5, Back $5, Total $10 per player) so each nine — and the
-    // overall round — has its own winner. Either way the full team stake
-    // is $20/player on the largest team.
-    const twoTeamGame = numTeams === 2;
-    const frontStake  = twoTeamGame ? 0 : largestSz * 5;
-    const backStake   = twoTeamGame ? 0 : largestSz * 5;
-    const totalStake  = twoTeamGame ? largestSz * 20 : largestSz * 10;
-    const fullStake   = frontStake + backStake + totalStake; // always $20/player on the largest team
-
-    // Per-player costs for each team
-    const teamPlayerCosts = state.teams.map(t => {
-      const sz        = t.playerIds.length;
-      const teamFull  = fullStake; // each team puts in the same total
-      const perPlayer = teamFull / sz;
-      const standard  = fullStake / largestSz; // what largest-team player pays
-      const extra     = perPlayer - standard;
-      return {
-        teamId: t.id,
-        name: t.name,
-        sz,
-        perPlayer: Math.round(perPlayer * 100) / 100,
-        extra: Math.round(extra * 100) / 100,
-        members: t.playerIds.map(pid => state.players.find(p=>p.id===pid)?.name.split(' ')[0]).join(' & ')
-      };
-    });
-
-    // Segment deltas per team (for determining winner)
-    // For unequal teams, compare AVERAGE delta per player so size doesn't advantage either team
-    const teamsWithSegments = state.teams.map(t => {
-      const sz = t.playerIds.length;
-      // Front quota = floor(quota/2), Back quota = ceil(quota/2)
-      // Team quota = sum of all players' front/back quotas
-      const frontRaw = t.playerIds.reduce((s, pid) => {
-        const p = state.players.find(x => x.id === pid);
-        const frontQ = p?.quota != null ? Math.floor(p.quota / 2) : 0;
-        return s + ((parseInt(state.scores[pid]?.front) || 0) - frontQ);
-      }, 0);
-      const backRaw = state.hasFrontBack ? t.playerIds.reduce((s, pid) => {
-        const p = state.players.find(x => x.id === pid);
-        const backQ = p?.quota != null ? Math.ceil(p.quota / 2) : 0;
-        return s + ((parseInt(state.scores[pid]?.back) || 0) - backQ);
-      }, 0) : null;
-      const totalRaw = t.playerIds.reduce((s, pid) => {
-        const p = state.players.find(x => x.id === pid);
-        return s + (totalPoints(pid) - (p?.quota || 0));
-      }, 0);
-      // Average per player (used for winner determination when teams are unequal)
-      const frontDelta = frontRaw / sz;
-      const backDelta  = backRaw !== null ? backRaw / sz : null;
-      const totalDelta = totalRaw / sz;
-      const cost = teamPlayerCosts.find(tc => tc.teamId === t.id);
-      return { ...t, frontDelta, backDelta, totalDelta,
-        frontRaw, backRaw, totalRaw,
-        members: cost.members, perPlayer: cost.perPlayer, extra: cost.extra, sz };
-    });
-
-    // Segment winner: pot = full contribution from every team (stake ×
-    // numTeams), so the winner collects the whole pot — their own stake
-    // plus everyone else's. This is a TOTAL payout, not net winnings, so
-    // total paid out always equals total paid in (aside from whole-dollar
-    // rounding on splits/ties).
-    const segmentWinner = (key, pot) => {
-      const sorted  = [...teamsWithSegments].sort((a,b) => b[key] - a[key]);
-      const top     = sorted[0][key];
-      const winners = sorted.filter(t => t[key] === top);
-      const tie     = winners.length > 1;
-      const prize   = tie ? Math.round(pot / winners.length) : pot;
-      return { winners, tie, pot, prize, key };
-    };
-
-    // Head-to-head games skip Front/Back entirely — only Total is scored.
-    const frontW = twoTeamGame ? null : segmentWinner('frontDelta', frontStake * numTeams);
-    const backW  = (!twoTeamGame && state.hasFrontBack) ? segmentWinner('backDelta', backStake * numTeams) : null;
-    const totW   = segmentWinner('totalDelta', totalStake * numTeams);
-
-    // Give each player on a winning team their equal share of whatever
-    // that team won across the front/back/total segments.
-    [frontW, backW, totW].forEach(result => {
-      if (!result) return;
-      result.winners.forEach(t => {
-        const share = result.prize / t.playerIds.length;
-        t.playerIds.forEach(pid => {
-          playerTeamPayout[pid] = (playerTeamPayout[pid] || 0) + share;
-        });
-      });
-    });
-
-    const fmtDelta = v => `${v >= 0 ? '+' : ''}${Math.round(v * 100) / 100}`;
-    const segRow = (label, result) => {
-      if (!result) return '';
-      const key = result.key;
-      const sorted = [...teamsWithSegments].sort((a, b) => b[key] - a[key]);
-      const topVal = sorted[0][key];
-      const runnerUp = sorted.find(t => t[key] !== topVal);
-      const marginStr = runnerUp
-        ? `<div style="font-size:9px;color:#8FBFAA;font-weight:400;margin-top:2px;">won by ${fmtDelta(topVal - runnerUp[key])}/player</div>`
-        : '';
-      const teamLines = sorted.map(t => {
-        const isWin = t[key] === topVal;
-        return `<div style="${isWin ? 'font-weight:700;color:var(--gold-light);' : 'color:#8FBFAA;'}">${isWin ? '🏆 ' : '　'}${t.name} (${t.members}): ${fmtDelta(t[key])}/player</div>`;
-      }).join('');
-      const prize = result.tie ? `${fmtMoney(result.prize)} each (tie)` : fmtMoney(result.prize);
-      return `<tr>
-        <td style="vertical-align:top;">${label}${marginStr}</td>
-        <td style="font-size:11px;text-align:left">${teamLines}</td>
-        <td style="color:var(--gold-light);font-weight:700;vertical-align:top;">${prize}</td>
-      </tr>`;
-    };
-
-    // Player cost breakdown — team stake plus the flat $10 individual buy-in
-    const costRows = teamPlayerCosts.map(tc => {
-      const extraStr  = tc.extra > 0 ? ` <span style="color:#f08080;font-size:10px">(+${fmtStake(tc.extra)} top-up)</span>` : '';
-      const totalOwed = tc.perPlayer + 10;
-      return `<tr>
-        <td style="font-size:11px">${tc.name} — ${tc.members}<br><span style="color:#8FBFAA">${tc.sz} players</span></td>
-        <td style="font-size:11px;color:#8FBFAA">${fmtStake(tc.perPlayer)} team${extraStr}<br>+ $10 indy = <strong style="color:#fff">${fmtStake(totalOwed)}</strong>/player</td>
-      </tr>`;
-    }).join('');
-
-    teamPayoutHtml = `
-      <div style="margin:14px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">💰 Team Payouts</div>
-      <div class="result-table-wrap"><table class="result-table">
-        <tbody>
-          ${segRow('Front 9', frontW)}
-          ${segRow('Back 9', backW)}
-          ${segRow(twoTeamGame ? 'Team Pot' : 'Total', totW)}
-        </tbody>
-      </table></div>
-      <div style="margin:8px 0 4px;font-size:10px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">Player Stakes</div>
-      <div class="result-table-wrap"><table class="result-table">
-        <tbody>${costRows}</tbody>
-      </table></div>`;
-  }
-
   // Individual payout HTML
   const indivPayoutHtml = (() => {
     const rows = indivPayoutRows.map(r => {
@@ -2149,13 +2143,10 @@ function finishRound() {
   const indivWinStr = indivTie
     ? `🤝 Individual tie — ${indivWinners.map(r => r.name.split(' ')[0]).join(' & ')}`
     : `${withDelta[0].name} wins individually!`;
-  const headlineWinner = state.isTeamGame && state.teams?.length > 0
-    ? teamWinnerLabel
-    : withDelta[0].name;
 
   banner.innerHTML = `
     <div class="result-crown">⛳</div>
-    <div class="result-winner">${headlineWinner} wins!</div>
+    <div class="result-winner" style="${state.isTeamGame && !twoTeamGame ? 'font-size:16px;' : ''}">${resultHeadline}</div>
     <div class="result-score">${state.date}</div>
     ${teamSection}
     ${teamPayoutHtml}

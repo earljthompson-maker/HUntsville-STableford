@@ -304,7 +304,7 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
 
 <!-- NAV -->
 <nav class="nav">
-  <div class="nav-brand"><span class="flag">⛳</span><span class="title">Huntsville Stableford</span></div>
+  <div class="nav-brand"><span class="title">Huntsville Stableford</span></div>
   <div class="nav-tabs">
     <div class="nav-tab active" onclick="showScreen('profiles')" id="tab-profiles">👤<span class="nav-tab-text"> Profiles</span></div>
     <div class="nav-tab" onclick="showScreen('setup')" id="tab-setup">🏌️<span class="nav-tab-text"> New Round</span></div>
@@ -339,6 +339,10 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
     <div id="no-profiles" class="empty-state" style="display:none;">
       <div class="icon">👤</div>
       <p>No players yet. Add players to get started.</p>
+    </div>
+
+    <div style="padding:16px 0 4px;">
+      <button class="btn btn-gold" style="width:100%;justify-content:center;font-size:15px;padding:13px;" onclick="showScreen('finances')">💰 View Financial Results</button>
     </div>
   </div>
 </div>

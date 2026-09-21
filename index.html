@@ -287,6 +287,16 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
   .form-row.col3 { grid-template-columns: 1fr 1fr; }
   .score-input { width: 64px; font-size: 22px; }
   .lb-pts { font-size: 20px; }
+  .nav { padding: 0 8px; }
+  .nav-brand { margin-right: 8px; gap: 5px; }
+  .nav-brand .title { font-size: 13px; }
+  .nav-tab { padding: 0 8px; font-size: 11px; gap: 3px; }
+  #sync-label { display: none; }
+}
+@media (max-width: 400px) {
+  .nav-brand .title { display: none; }
+  .nav-tab { padding: 0 9px; }
+  .nav-tab-text { display: none; }
 }
 </style>
 </head>
@@ -296,12 +306,13 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
 <nav class="nav">
   <div class="nav-brand"><span class="flag">⛳</span><span class="title">Huntsville Stableford</span></div>
   <div class="nav-tabs">
-    <div class="nav-tab active" onclick="showScreen('profiles')" id="tab-profiles">👤 Profiles</div>
-    <div class="nav-tab" onclick="showScreen('setup')" id="tab-setup">🏌️ New Round</div>
-    <div class="nav-tab" onclick="showScreen('scorecard')" id="tab-scorecard">📋 Scorecard</div>
+    <div class="nav-tab active" onclick="showScreen('profiles')" id="tab-profiles">👤<span class="nav-tab-text"> Profiles</span></div>
+    <div class="nav-tab" onclick="showScreen('setup')" id="tab-setup">🏌️<span class="nav-tab-text"> New Round</span></div>
+    <div class="nav-tab" onclick="showScreen('scorecard')" id="tab-scorecard">📋<span class="nav-tab-text"> Scorecard</span></div>
+    <div class="nav-tab" onclick="showScreen('finances')" id="tab-finances">💰<span class="nav-tab-text"> Finances</span></div>
   </div>
-  <div style="margin-left:auto;display:flex;align-items:center;padding-left:8px;flex-shrink:0;">
-    <span id="sync-status" style="font-size:11px;color:var(--gold);white-space:nowrap;">⏳ Syncing...</span>
+  <div style="margin-left:auto;display:flex;align-items:center;padding-left:6px;flex-shrink:0;">
+    <span id="sync-status" style="font-size:11px;color:var(--gold);white-space:nowrap;"><span id="sync-icon">⏳</span><span id="sync-label"> Syncing...</span></span>
   </div>
 </nav>
 
@@ -410,6 +421,32 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
       <button class="btn btn-gold" style="width:100%;justify-content:center;font-size:16px;padding:14px;" onclick="finishRound()">🏆 Finish Round</button>
     </div>
     <div id="result-banner"></div>
+  </div>
+</div>
+
+<!-- ═══════════ FINANCES SCREEN ═══════════ -->
+<div id="screen-finances" class="screen">
+  <div class="page">
+    <div class="section-head">
+      <span class="section-title">Financial History</span>
+    </div>
+
+    <div id="finances-grid" class="profiles-grid"></div>
+
+    <div id="finances-detail" style="display:none;">
+      <div class="panel">
+        <div class="panel-head" id="fin-detail-head">Payout History</div>
+        <div class="panel-body" style="padding:0;">
+          <div class="stat-bar" id="fin-detail-stats" style="border:none;border-radius:0;margin:0;border-bottom:1px solid var(--rule);"></div>
+          <div id="fin-detail-history" style="overflow-x:auto;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="no-finances" class="empty-state" style="display:none;">
+      <div class="icon">💰</div>
+      <p>No payout data yet. Payouts are recorded the next time a round is finished.</p>
+    </div>
   </div>
 </div>
 
@@ -688,8 +725,11 @@ async function syncFromSupabase() {
 
 function updateSyncStatus() {
   const el = document.getElementById('sync-status');
-  if (!el) return;
-  el.textContent = sbOnline ? '🟢 Synced' : '🟡 Local only';
+  const icon = document.getElementById('sync-icon');
+  const label = document.getElementById('sync-label');
+  if (!el || !icon || !label) return;
+  icon.textContent = sbOnline ? '🟢' : '🟡';
+  label.textContent = sbOnline ? ' Synced' : ' Local only';
   el.style.color = sbOnline ? 'var(--green-mid)' : 'var(--gold)';
 }
 
@@ -750,6 +790,7 @@ function showScreen(id) {
   document.getElementById('tab-' + id).classList.add('active');
   if (id === 'profiles') renderProfiles();
   if (id === 'setup')    renderSetup();
+  if (id === 'finances') renderFinances();
 }
 
 // ══════════════════════════════════════
@@ -1074,6 +1115,131 @@ function deleteProfile(pid) {
     if (selectedProfileId === pid) selectedProfileId = null;
     renderProfiles();
   });
+}
+
+// ══════════════════════════════════════
+// FINANCES SCREEN
+// ══════════════════════════════════════
+let selectedFinancePlayerId = null;
+
+// Every round's player record that has a `net` field carries payout data
+// (added once the Finances feature shipped). Older rounds saved before
+// that have no such field and are skipped here.
+function financeRoundsFor(pid) {
+  return loadHistory()
+    .filter(r => r.players.some(rp => rp.id === pid && rp.net !== undefined))
+    .map(r => ({ round: r, rp: r.players.find(rp => rp.id === pid) }));
+}
+
+function financeTotals(pid) {
+  const rounds = financeRoundsFor(pid);
+  return rounds.reduce((acc, { rp }) => {
+    acc.won   += (rp.prize || 0) + (rp.teamPrize || 0);
+    acc.stake += (rp.teamStake || 0);
+    acc.net   += rp.net || 0;
+    acc.rounds += 1;
+    return acc;
+  }, { won: 0, stake: 0, net: 0, rounds: 0 });
+}
+
+function renderFinances() {
+  const profiles = loadProfiles();
+  const history  = loadHistory();
+  const grid   = document.getElementById('finances-grid');
+  const noFin  = document.getElementById('no-finances');
+  const detail = document.getElementById('finances-detail');
+
+  // Every distinct player id that appears in any round with payout data
+  const idsWithData = new Set();
+  history.forEach(r => r.players.forEach(rp => { if (rp.net !== undefined) idsWithData.add(rp.id); }));
+
+  if (idsWithData.size === 0) {
+    grid.innerHTML = '';
+    noFin.style.display = 'block';
+    detail.style.display = 'none';
+    return;
+  }
+  noFin.style.display = 'none';
+
+  const rows = [...idsWithData].map(pid => {
+    const profile = profiles.find(p => p.id === pid);
+    const lastName = history.filter(r => r.players.some(rp => rp.id === pid))
+      .slice(-1)[0]?.players.find(rp => rp.id === pid)?.name;
+    const name = profile ? profile.name : (lastName || 'Unknown player');
+    return { pid, name, ...financeTotals(pid) };
+  }).sort((a, b) => b.net - a.net || a.name.localeCompare(b.name));
+
+  grid.innerHTML = rows.map((row, i) => {
+    const idx      = profiles.findIndex(p => p.id === row.pid);
+    const color    = PLAYER_COLORS[(idx >= 0 ? idx : i) % PLAYER_COLORS.length];
+    const selected = row.pid === selectedFinancePlayerId;
+    const netColor = row.net > 0 ? '#1B4D3E' : row.net < 0 ? '#C0392B' : 'var(--ink-soft)';
+    const netBg    = row.net > 0 ? '#d4edda' : row.net < 0 ? '#fde8e8' : '#eee';
+    const netStr   = `${row.net >= 0 ? '+' : ''}$${Math.abs(row.net) === Math.round(Math.abs(row.net)) ? Math.round(row.net) : row.net.toFixed(2)}`;
+    return `
+    <div class="profile-card ${selected ? 'selected' : ''}" onclick="selectFinancePlayer('${row.pid}')">
+      <div class="avatar" style="background:${color}">${initials(row.name)}</div>
+      <div style="flex:1;min-width:0;">
+        <div class="p-name">${row.name}</div>
+        <div class="profile-badges" style="margin-top:4px;">
+          <span class="p-badge" style="background:${netBg};color:${netColor}">${netStr} net</span>
+          <span class="p-badge" style="background:#F0EDE6;color:var(--ink-soft)">${row.rounds} round${row.rounds!==1?'s':''}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  if (selectedFinancePlayerId && idsWithData.has(selectedFinancePlayerId)) {
+    renderFinanceDetail(selectedFinancePlayerId);
+  } else {
+    selectedFinancePlayerId = null;
+    detail.style.display = 'none';
+  }
+}
+
+function selectFinancePlayer(pid) {
+  selectedFinancePlayerId = selectedFinancePlayerId === pid ? null : pid;
+  renderFinances();
+}
+
+function renderFinanceDetail(pid) {
+  const profiles = loadProfiles();
+  const profile  = profiles.find(p => p.id === pid);
+  const rounds   = financeRoundsFor(pid).slice().reverse(); // most recent first
+  const totals   = financeTotals(pid);
+  const name     = profile ? profile.name : (rounds[0]?.rp.name || 'Unknown player');
+
+  const detail = document.getElementById('finances-detail');
+  detail.style.display = 'block';
+  document.getElementById('fin-detail-head').textContent = `${name} — Payout History`;
+
+  const fmt = v => `${v >= 0 ? '+' : ''}$${Math.abs(v) === Math.round(Math.abs(v)) ? Math.round(v) : v.toFixed(2)}`;
+  const fmtPlain = v => `$${v === Math.round(v) ? v : v.toFixed(2)}`;
+
+  document.getElementById('fin-detail-stats').innerHTML = `
+    <div class="stat-item"><div class="stat-val">${totals.rounds}</div><div class="stat-lbl">Rounds</div></div>
+    <div class="stat-item"><div class="stat-val">${fmtPlain(totals.won)}</div><div class="stat-lbl">Total Won</div></div>
+    <div class="stat-item"><div class="stat-val">${fmtPlain(totals.stake)}</div><div class="stat-lbl">Total Staked</div></div>
+    <div class="stat-item"><div class="stat-val" style="color:${totals.net>=0?'var(--green-mid)':'var(--red)'}">${fmt(totals.net)}</div><div class="stat-lbl">Net</div></div>`;
+
+  const rows = rounds.map(({ round, rp }) => {
+    const won   = (rp.prize || 0) + (rp.teamPrize || 0);
+    const netColor = rp.net > 0 ? '#1B4D3E' : rp.net < 0 ? '#C0392B' : 'var(--ink-soft)';
+    const badge = rp.net > 0 ? 'badge-beat' : rp.net < 0 ? 'badge-miss' : 'badge-met';
+    return `<tr>
+      <td>${round.date}</td>
+      <td>${rp.team || '—'}</td>
+      <td>${fmtPlain(won)}</td>
+      <td>${rp.teamStake ? fmtPlain(rp.teamStake) : '—'}</td>
+      <td><span class="badge ${badge}" style="color:${netColor};background:transparent;border:1px solid currentColor;">${fmt(rp.net)}</span></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('fin-detail-history').innerHTML = `
+    <table class="history-table">
+      <thead><tr><th>Date</th><th>Team</th><th>Won</th><th>Staked</th><th>Net</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
 }
 
 // ══════════════════════════════════════
@@ -1631,23 +1797,6 @@ function finishRound() {
   });
   saveProfiles(profiles);
 
-  // Save to history (records the quota that was active for this round)
-  const entry = {
-    id:       genId(),
-    date:     state.date,
-    holes:    state.numHoles,
-    quotaGame,
-    players:  ranked.map(r => ({
-      id:r.id, name:r.name, points:r.pts, tee:r.tee, defaultTee:r.defaultTee, teeAdj:r.teeAdj||0,
-      front: parseInt(state.scores[r.id].front) || 0,
-      back:  state.scores[r.id].back !== null ? (parseInt(state.scores[r.id].back) || 0) : null,
-      quota:r.quota, newQuota:r.newQuota, quotaChange:r.quotaChange
-    }))
-  };
-  const history = loadHistory();
-  history.push(entry);
-  saveHistory(history);
-
   const banner = document.getElementById('result-banner');
   banner.style.display = 'block';
 
@@ -1778,7 +1927,7 @@ function finishRound() {
       const totalPrize = positions.reduce((s, pos) => s + (indivPayout[pos] || 0), 0);
       const eachGets   = tied.length > 1 ? Math.round(totalPrize / tied.length) : totalPrize;
       tied.forEach(r => {
-        if (eachGets > 0) rows.push({ name: r.name, delta: r.delta, prize: eachGets, tied: tied.length > 1 });
+        if (eachGets > 0) rows.push({ id: r.id, name: r.name, delta: r.delta, prize: eachGets, tied: tied.length > 1 });
       });
       i += tied.length;
     }
@@ -1791,6 +1940,8 @@ function finishRound() {
   // Segments: front=$5/player, back=$5/player, total=$10/player (largest team basis)
   // Winning team always collects largest-team stake × number of losing teams.
   let teamPayoutHtml = '';
+  let teamPrizeByTeamId = {};   // teamId -> total $ won across front/back/total segments
+  let teamCostByTeamId  = {};   // teamId -> $ each member of that team paid in
   if (state.isTeamGame && state.teams && state.teams.length > 0) {
     const teamSizes   = state.teams.map(t => t.playerIds.length);
     const largestSz   = Math.max(...teamSizes);
@@ -1863,6 +2014,15 @@ function finishRound() {
     const backW  = state.hasFrontBack ? segmentWinner('backDelta', backStake * (numTeams - 1)) : null;
     const totW   = segmentWinner('totalDelta', totalStake * (numTeams - 1));
 
+    // Tally each team's total $ won across segments, and what each member paid in
+    [frontW, backW, totW].forEach(seg => {
+      if (!seg) return;
+      seg.winners.forEach(t => {
+        teamPrizeByTeamId[t.id] = (teamPrizeByTeamId[t.id] || 0) + seg.prize;
+      });
+    });
+    teamPlayerCosts.forEach(tc => { teamCostByTeamId[tc.teamId] = tc.perPlayer; });
+
     const fmtMoney = v => `$${Number.isInteger(v) ? v : v.toFixed(2)}`;
 
     const fmtDelta = v => `${v >= 0 ? '+' : ''}${Math.round(v * 100) / 100}`;
@@ -1918,6 +2078,40 @@ function finishRound() {
       <div style="margin:14px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">💰 Individual Payouts</div>
       <table class="result-table" style="margin-bottom:10px;"><tbody>${rows}</tbody></table>` : '';
   })();
+
+  // Save to history (records the quota + payout numbers active for this round)
+  const entry = {
+    id:       genId(),
+    date:     state.date,
+    holes:    state.numHoles,
+    quotaGame,
+    players:  ranked.map(r => {
+      const indivPrizeEntry = indivPayoutRows.find(x => x.id === r.id);
+      const prize = indivPrizeEntry ? indivPrizeEntry.prize : 0;
+      let teamPrize = 0, teamStake = 0, teamName = null;
+      if (state.isTeamGame && state.teams) {
+        const myTeam = state.teams.find(t => t.playerIds.includes(r.id));
+        if (myTeam) {
+          teamName  = myTeam.name;
+          teamPrize = myTeam.playerIds.length > 0
+            ? Math.round((teamPrizeByTeamId[myTeam.id] || 0) / myTeam.playerIds.length * 100) / 100
+            : 0;
+          teamStake = teamCostByTeamId[myTeam.id] || 0;
+        }
+      }
+      const net = Math.round((prize + teamPrize - teamStake) * 100) / 100;
+      return {
+        id:r.id, name:r.name, points:r.pts, tee:r.tee, defaultTee:r.defaultTee, teeAdj:r.teeAdj||0,
+        front: parseInt(state.scores[r.id].front) || 0,
+        back:  state.scores[r.id].back !== null ? (parseInt(state.scores[r.id].back) || 0) : null,
+        quota:r.quota, newQuota:r.newQuota, quotaChange:r.quotaChange,
+        prize, teamPrize, teamStake, net, team: teamName
+      };
+    })
+  };
+  const history = loadHistory();
+  history.push(entry);
+  saveHistory(history);
 
   // ── Winner headline ──
   const indivWinStr = indivTie

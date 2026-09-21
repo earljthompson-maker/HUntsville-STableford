@@ -792,7 +792,6 @@ function renderProfiles() {
       <div class="avatar" style="background:${color}">${initials(p.name)}</div>
       <div style="flex:1;min-width:0;">
         <div class="p-name">${p.name}</div>
-        ${p.phone ? `<div class="p-meta">📞 ${p.phone}</div>` : ''}
         <div class="profile-badges" style="margin-top:4px;">
           <span class="p-badge p-badge-quota">Q: ${p.quota}</span>
           <span class="p-badge" style="background:${teeBadgeColor(p.tee)};color:${teeBadgeText(p.tee)};border:1px solid rgba(0,0,0,0.08)">${teeBadgeIcon(p.tee)} ${p.tee||'White'}</span>
@@ -825,7 +824,7 @@ function renderProfileDetail(pid) {
   const allHistory = loadHistory().filter(r => r.players.some(rp => rp.id === pid));
   const detail = document.getElementById('profile-detail');
   detail.style.display = 'block';
-  document.getElementById('detail-head').textContent = `${p.name}${p.phone ? ' — ' + p.phone : ''} — Round History`;
+  document.getElementById('detail-head').textContent = `${p.name} — Round History`;
 
   // Stats
   let beats = 0, totalPts = 0, totalVQ = 0, best = null;

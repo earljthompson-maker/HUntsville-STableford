@@ -33,11 +33,12 @@ body {
 .nav {
   background: var(--green-deep); color: var(--white);
   padding: 0 20px; display: flex; align-items: stretch; height: 54px;
+  overflow-x: auto;
 }
 .nav-brand { display: flex; align-items: center; gap: 9px; margin-right: 20px; flex-shrink: 0; }
 .nav-brand .flag { font-size: 22px; }
 .nav-brand .title { font-size: 16px; font-weight: 700; letter-spacing: -0.2px; }
-.nav-tabs { display: flex; align-items: stretch; }
+.nav-tabs { display: flex; align-items: stretch; flex-shrink: 0; }
 .nav-tab {
   display: flex; align-items: center; gap: 6px;
   padding: 0 16px; font-size: 13px; font-weight: 600;
@@ -294,13 +295,13 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
 <!-- NAV -->
 <nav class="nav">
   <div class="nav-brand"><span class="flag">⛳</span><span class="title">Huntsville Stableford</span></div>
-  <div style="flex:1;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;">
-    <span id="sync-status" style="font-size:11px;color:var(--gold);">⏳ Syncing...</span>
-  </div>
   <div class="nav-tabs">
     <div class="nav-tab active" onclick="showScreen('profiles')" id="tab-profiles">👤 Profiles</div>
     <div class="nav-tab" onclick="showScreen('setup')" id="tab-setup">🏌️ New Round</div>
     <div class="nav-tab" onclick="showScreen('scorecard')" id="tab-scorecard">📋 Scorecard</div>
+  </div>
+  <div style="margin-left:auto;display:flex;align-items:center;padding-left:8px;flex-shrink:0;">
+    <span id="sync-status" style="font-size:11px;color:var(--gold);white-space:nowrap;">⏳ Syncing...</span>
   </div>
 </nav>
 
@@ -593,6 +594,47 @@ function mergeById(remote, local) {
   return Array.from(byId.values());
 }
 
+// Groups profiles by normalized name and collapses each group to one
+// profile. Prefers keeping whichever copy has round history attached
+// (protects real data), then whichever has a phone number filled in,
+// then the first. Missing quota/tee/phone are backfilled from the
+// copies that get dropped. Returns the collapsed list plus the ids
+// of the copies that were dropped, so callers can delete them
+// upstream (Supabase) and must never re-upload them afterward.
+function dedupeProfilesList(profiles, history) {
+  const roundsOf = (id) => history.filter(r => r.players.some(rp => rp.id === id)).length;
+  const groups = new Map();
+  profiles.forEach(p => {
+    const key = (p.name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(p);
+  });
+
+  const kept = [];
+  const removedIds = [];
+
+  for (const dupes of groups.values()) {
+    if (dupes.length === 1) { kept.push(dupes[0]); continue; }
+    const ranked = [...dupes].sort((a, b) => {
+      const hr = roundsOf(b.id) - roundsOf(a.id);
+      if (hr !== 0) return hr;
+      const ap = a.phone ? 1 : 0, bp = b.phone ? 1 : 0;
+      if (bp !== ap) return bp - ap;
+      return 0;
+    });
+    const keeper = { ...ranked[0] };
+    ranked.slice(1).forEach(d => {
+      if (!keeper.phone && d.phone) keeper.phone = d.phone;
+      if (keeper.quota == null && d.quota != null) keeper.quota = d.quota;
+      if (!keeper.tee && d.tee) keeper.tee = d.tee;
+      removedIds.push(d.id);
+    });
+    kept.push(keeper);
+  }
+
+  return { kept, removedIds };
+}
+
 async function syncFromSupabase() {
   try {
     const [remoteProfiles, remoteHistory] = await Promise.all([
@@ -604,18 +646,31 @@ async function syncFromSupabase() {
     // a failed/partial fetch (or a record that hasn't reached Supabase
     // yet) must never erase data that only exists on this device.
     const localProfiles = loadProfiles();
-    const mergedProfiles = mergeById(remoteProfiles, localProfiles);
-    localStorage.setItem(PKEY, JSON.stringify(mergedProfiles));
+    const mergedProfilesRaw = mergeById(remoteProfiles, localProfiles);
 
     const localHistory = loadHistory();
     const mergedHistory = mergeById(remoteHistory, localHistory);
     mergedHistory.sort((a, b) => new Date(a.date) - new Date(b.date));
     localStorage.setItem(HKEY, JSON.stringify(mergedHistory));
 
+    // Collapse any duplicate-named profiles (e.g. from a device that
+    // hadn't synced yet when a name was re-added) BEFORE deciding what
+    // to self-heal, so a dropped duplicate never gets pushed back up.
+    const { kept: mergedProfiles, removedIds } = dedupeProfilesList(mergedProfilesRaw, mergedHistory);
+    localStorage.setItem(PKEY, JSON.stringify(mergedProfiles));
+    for (const id of removedIds) {
+      await sbDelete('profiles', id);
+    }
+    if (selectedProfileId && removedIds.includes(selectedProfileId)) {
+      selectedProfileId = null;
+    }
+
     // Self-heal: push up anything that's local-only (i.e. wasn't in the
     // remote set) so it reaches Supabase even if an earlier write failed.
+    // Only survivors of the dedupe above are eligible — a dropped
+    // duplicate must never be re-uploaded.
     const remoteProfileIds = new Set((remoteProfiles || []).map(p => p.id));
-    localProfiles
+    mergedProfiles
       .filter(p => !remoteProfileIds.has(p.id))
       .forEach(p => sbUpsert('profiles', p.id, p));
 
@@ -1909,73 +1964,16 @@ function newRound() {
 }
 
 // ══════════════════════════════════════
-// DEDUPE — cleans up duplicate profiles that were created when the
-// one-time roster import ran independently on more than one device
-// before they'd synced with each other. Safe to run every load:
-// once there's nothing left to merge it's a no-op. For each set of
-// profiles sharing a name, keeps whichever one has round history
-// attached (or, if none do, whichever has a phone number filled in,
-// else the first), merges in any missing quota/tee/phone from the
-// others, and deletes the rest from Supabase + localStorage.
+// INIT
 // ══════════════════════════════════════
-async function dedupePlayersByName() {
-  const profiles = loadProfiles();
-  const history  = loadHistory();
-  const roundsOf = (id) => history.filter(r => r.players.some(rp => rp.id === id)).length;
-
-  const groups = new Map(); // normalized name -> profiles[]
-  profiles.forEach(p => {
-    const key = (p.name || '').trim().toLowerCase().replace(/\s+/g, ' ');
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(p);
-  });
-
-  let changed = false;
-  const kept = [];
-
-  for (const dupes of groups.values()) {
-    if (dupes.length === 1) { kept.push(dupes[0]); continue; }
-    changed = true;
-    // Rank: most round history first, then has a phone, then original order
-    const ranked = [...dupes].sort((a, b) => {
-      const hr = roundsOf(b.id) - roundsOf(a.id);
-      if (hr !== 0) return hr;
-      const ap = a.phone ? 1 : 0, bp = b.phone ? 1 : 0;
-      if (bp !== ap) return bp - ap;
-      return 0;
-    });
-    const keeper = { ...ranked[0] };
-    // Fill in anything missing from the runners-up
-    ranked.slice(1).forEach(d => {
-      if (!keeper.phone && d.phone) keeper.phone = d.phone;
-      if (keeper.quota == null && d.quota != null) keeper.quota = d.quota;
-      if (!keeper.tee && d.tee) keeper.tee = d.tee;
-    });
-    kept.push(keeper);
-    // Delete the losers (Supabase + skip re-adding locally)
-    for (const d of ranked.slice(1)) {
-      await sbDelete('profiles', d.id);
-    }
-  }
-
-  if (changed) {
-    saveProfiles(kept);
-    if (selectedProfileId && !kept.some(p => p.id === selectedProfileId)) {
-      selectedProfileId = null;
-    }
-  }
-}
-
-// Init — render immediately from local cache, then sync from Supabase
 document.getElementById('round-date').value =
   new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
 
 renderProfiles();
 renderSetup();
 
-// Sync in background, clean up any duplicate profiles, then re-render
-syncFromSupabase().then(async () => {
-  await dedupePlayersByName();
+// Sync in background (dedupe runs as part of the sync itself) — updates UI when done
+syncFromSupabase().then(() => {
   renderProfiles();
   renderSetup();
 });

@@ -771,23 +771,30 @@ function renderProfiles() {
   noP.style.display = 'none';
 
   const history = loadHistory();
-  const sortedProfiles = [...profiles].sort((a, b) => {
-    const aRounds = history.filter(r => r.players.some(rp => rp.id === a.id)).length;
-    const bRounds = history.filter(r => r.players.some(rp => rp.id === b.id)).length;
+  const roundsOf = (id) => history.filter(r => r.players.some(rp => rp.id === id)).length;
+  const byRoundsThenName = (a, b) => {
+    const bRounds = roundsOf(b.id), aRounds = roundsOf(a.id);
     if (bRounds !== aRounds) return bRounds - aRounds;
     return a.name.localeCompare(b.name);
-  });
+  };
+  const veteran = profiles.filter(p => roundsOf(p.id) >= 5).sort(byRoundsThenName);
+  const newer   = profiles.filter(p => roundsOf(p.id) < 5).sort(byRoundsThenName);
+  const sortedProfiles = [...veteran, ...newer];
+  const dividerBeforeId = newer.length > 0 && veteran.length > 0 ? newer[0].id : null;
   grid.innerHTML = sortedProfiles.map((p) => {
     const idx      = profiles.indexOf(p);
     const color    = PLAYER_COLORS[idx % PLAYER_COLORS.length];
-    const rounds   = history.filter(r => r.players.some(rp => rp.id === p.id)).length;
+    const rounds   = roundsOf(p.id);
     const teamNum  = calcTeamNumber(p.id);
     const selected = p.id === selectedProfileId;
     const teamBadge = teamNum !== null
       ? `<span class="p-badge p-badge-team">⭐ Team: ${teamNum}</span>`
       : `<span class="p-badge p-badge-team-pending">Team: needs ${Math.max(0, 3 - rounds)} more round${3-rounds!==1?'s':''}</span>`;
     const pid = p.id;
-    return `
+    const divider = p.id === dividerBeforeId
+      ? `<div style="background:var(--green-deep);color:#fff;padding:7px 14px;font-size:11px;font-weight:700;letter-spacing:0.3px;">FEWER THAN 5 ROUNDS</div>`
+      : '';
+    return `${divider}
     <div class="profile-card ${selected ? 'selected' : ''}" onclick="selectProfile('${pid}')">
       <div class="avatar" style="background:${color}">${initials(p.name)}</div>
       <div style="flex:1;min-width:0;">

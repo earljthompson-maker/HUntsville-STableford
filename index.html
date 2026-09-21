@@ -1909,86 +1909,61 @@ function newRound() {
 }
 
 // ══════════════════════════════════════
-// ONE-TIME ROSTER IMPORT (2026-09-20)
-// Wipes all existing players and loads the roster below.
-// Round history is left untouched. Runs once per browser
-// (guarded by IMPORT_FLAG) then never runs again.
+// DEDUPE — cleans up duplicate profiles that were created when the
+// one-time roster import ran independently on more than one device
+// before they'd synced with each other. Safe to run every load:
+// once there's nothing left to merge it's a no-op. For each set of
+// profiles sharing a name, keeps whichever one has round history
+// attached (or, if none do, whichever has a phone number filled in,
+// else the first), merges in any missing quota/tee/phone from the
+// others, and deletes the rest from Supabase + localStorage.
 // ══════════════════════════════════════
-const IMPORT_FLAG = 'stableford_import_2026_09_20_v2';
-const IMPORT_ROSTER = [
-  { name: 'Albe Evans', quota: 37, tee: 'Gold', phone: '(570) 926-0926' },
-  { name: 'Alex Anderson', quota: 45, tee: 'Gold', phone: '(570) 814-5363' },
-  { name: 'Allen Morrow', quota: 22, tee: 'Green', phone: '(570) 240-1660' },
-  { name: 'Andrew Maddock', quota: 34, tee: 'Gold', phone: '(570) 878-4425' },
-  { name: 'Brett Slocum', quota: 32, tee: 'White', phone: '(570) 574-4454' },
-  { name: 'Bob Gill', quota: 33, tee: 'Green', phone: '(570) 574-2556' },
-  { name: 'Brendan Scanlan', quota: 32, tee: 'Gold', phone: '(570) 575-8778' },
-  { name: 'Brian Corbett', quota: 28, tee: 'Green', phone: '(570) 262-9453' },
-  { name: 'Chad Dedona', quota: 30, tee: 'Gold', phone: '(570) 498-9027' },
-  { name: 'Chase Makowski', quota: 27, tee: 'Gold', phone: '(570) 704-7936' },
-  { name: 'Chris Sheehan', quota: 35, tee: 'Gold', phone: '(412) 969-8874' },
-  { name: 'Chuckie Brandt', quota: 31, tee: 'White', phone: '(570) 406-5129' },
-  { name: 'Clem Gover', quota: 24, tee: 'Green', phone: '(570) 690-3107' },
-  { name: 'David Kluger', quota: 29, tee: 'White', phone: '(570) 881-9846' },
-  { name: 'Dom Castriganano', quota: 33, tee: 'Gold', phone: '(570) 466-8795' },
-  { name: 'Earl Thompson', quota: 32, tee: 'Gold', phone: '(570) 417-2422' },
-  { name: 'Frank Pinnacoli', quota: 31, tee: 'Gold', phone: '(570) 574-6888' },
-  { name: 'Charlie Gelso', quota: 28, tee: 'White', phone: '(570) 574-7166' },
-  { name: 'Greg Mascioli', quota: 28, tee: 'Gold', phone: '(570) 690-0245' },
-  { name: 'Jack Oliver', quota: 35, tee: 'Gold', phone: '(570) 706-6487' },
-  { name: 'Jason Barkley', quota: 34, tee: 'Gold', phone: '(610) 721-6928' },
-  { name: 'Jim Hoover', quota: 31, tee: 'Green', phone: '(570) 760-7967' },
-  { name: 'Jimmy Tressler Jr', quota: 35, tee: 'Gold', phone: '(570) 851-7171' },
-  { name: 'Jim Fronzoni', quota: 29, tee: 'White', phone: '(570) 650-0987' },
-  { name: 'Joe Collini', quota: 31, tee: 'Gold', phone: '(570) 760-8469' },
-  { name: 'Joe Bevevino', quota: 38, tee: 'Gold', phone: '(570) 762-6735' },
-  { name: 'Joey Ferretti', quota: 22, tee: 'Green', phone: '(570) 909-8233' },
-  { name: 'John Henry', quota: 30, tee: 'Gold', phone: '(570) 954-5221' },
-  { name: 'Jonathan Wilson', quota: 35, tee: 'Gold', phone: '(570) 540-3575' },
-  { name: 'Kenny Wallace', quota: 28, tee: 'Gold', phone: '' },
-  { name: 'Lance Sutter', quota: 17, tee: 'White', phone: '(570) 470-1596' },
-  { name: 'Liam Gill', quota: 34, tee: 'Gold', phone: '(570) 406-6137' },
-  { name: 'Logan Paczewski', quota: 42, tee: 'Gold', phone: '(570) 574-1124' },
-  { name: 'Marty Wilbur', quota: 26, tee: 'White', phone: '(570) 407-0370' },
-  { name: 'Matt Dolan', quota: 30, tee: 'Gold', phone: '(570) 814-7675' },
-  { name: 'Matt Tresssler', quota: 30, tee: 'Gold', phone: '(570) 507-1811' },
-  { name: 'Michael Luggiano', quota: 45, tee: 'Black', phone: '(570) 814-0250' },
-  { name: 'Michael Boland', quota: 32, tee: 'Gold', phone: '(570) 262-6896' },
-  { name: 'Michael Grimes', quota: 32, tee: 'Gold', phone: '(570) 814-3953' },
-  { name: 'Mike Kashnicki', quota: 37, tee: 'Gold', phone: '(570) 331-9215' },
-  { name: 'Mike Vassil', quota: 31, tee: 'Gold', phone: '(570) 575-0869' },
-  { name: 'Frank Nockley', quota: 30, tee: 'Gold', phone: '(570) 706-0399' },
-  { name: 'Paul Schaub', quota: 34, tee: 'Gold', phone: '(806) 438-4446' },
-  { name: 'Santo Lafoca', quota: 29, tee: 'Green', phone: '(570) 881-9997' },
-  { name: 'Scott Carney', quota: 29, tee: 'White', phone: '(215) 837-1139' },
-  { name: 'Steve Doziak', quota: 29, tee: 'Green', phone: '(570) 706-0369' },
-  { name: 'Tony Gallas', quota: 22, tee: 'White', phone: '(570) 479-4879' },
-  { name: 'Tim Rutkowski', quota: 32, tee: 'Gold', phone: '(570) 855-0447' },
-  { name: 'Todd Vonderheid', quota: 35, tee: 'Gold', phone: '(570) 760-4632' },
-  { name: 'Tony Bevevino', quota: 37, tee: 'Gold', phone: '(570) 762-6735' },
-  { name: 'Tyler McGarry', quota: 38, tee: 'Gold', phone: '(570) 362-1764' },
-];
+async function dedupePlayersByName() {
+  const profiles = loadProfiles();
+  const history  = loadHistory();
+  const roundsOf = (id) => history.filter(r => r.players.some(rp => rp.id === id)).length;
 
-async function runOneTimeRosterImport() {
-  if (localStorage.getItem(IMPORT_FLAG)) return;
+  const groups = new Map(); // normalized name -> profiles[]
+  profiles.forEach(p => {
+    const key = (p.name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(p);
+  });
 
-  // Delete every existing profile (locally and in Supabase)
-  const oldProfiles = loadProfiles();
-  for (const p of oldProfiles) {
-    await sbDelete('profiles', p.id);
+  let changed = false;
+  const kept = [];
+
+  for (const dupes of groups.values()) {
+    if (dupes.length === 1) { kept.push(dupes[0]); continue; }
+    changed = true;
+    // Rank: most round history first, then has a phone, then original order
+    const ranked = [...dupes].sort((a, b) => {
+      const hr = roundsOf(b.id) - roundsOf(a.id);
+      if (hr !== 0) return hr;
+      const ap = a.phone ? 1 : 0, bp = b.phone ? 1 : 0;
+      if (bp !== ap) return bp - ap;
+      return 0;
+    });
+    const keeper = { ...ranked[0] };
+    // Fill in anything missing from the runners-up
+    ranked.slice(1).forEach(d => {
+      if (!keeper.phone && d.phone) keeper.phone = d.phone;
+      if (keeper.quota == null && d.quota != null) keeper.quota = d.quota;
+      if (!keeper.tee && d.tee) keeper.tee = d.tee;
+    });
+    kept.push(keeper);
+    // Delete the losers (Supabase + skip re-adding locally)
+    for (const d of ranked.slice(1)) {
+      await sbDelete('profiles', d.id);
+    }
   }
 
-  // Build fresh profiles from the roster and save (local + Supabase)
-  const newProfiles = IMPORT_ROSTER.map(r => ({
-    id: genId(), name: r.name, quota: r.quota, tee: r.tee, phone: r.phone || ''
-  }));
-  saveProfiles(newProfiles);
-
-  if (selectedProfileId && !newProfiles.some(p => p.id === selectedProfileId)) {
-    selectedProfileId = null;
+  if (changed) {
+    saveProfiles(kept);
+    if (selectedProfileId && !kept.some(p => p.id === selectedProfileId)) {
+      selectedProfileId = null;
+    }
   }
-
-  localStorage.setItem(IMPORT_FLAG, '1');
 }
 
 // Init — render immediately from local cache, then sync from Supabase
@@ -1998,9 +1973,9 @@ document.getElementById('round-date').value =
 renderProfiles();
 renderSetup();
 
-// Sync in background, then run the one-time roster import, then re-render
+// Sync in background, clean up any duplicate profiles, then re-render
 syncFromSupabase().then(async () => {
-  await runOneTimeRosterImport();
+  await dedupePlayersByName();
   renderProfiles();
   renderSetup();
 });

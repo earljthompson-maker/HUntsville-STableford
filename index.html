@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Huntsville Quota Game</title>
+<title>Huntsville Stableford Game</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -37,8 +37,7 @@ body {
 .nav-brand { display: flex; align-items: center; gap: 9px; margin-right: 20px; flex-shrink: 0; }
 .nav-brand .flag { font-size: 22px; }
 .nav-brand .title { font-size: 16px; font-weight: 700; letter-spacing: -0.2px; }
-.nav-tabs { display: flex; align-items: stretch; min-width: 0; overflow-x: auto; scrollbar-width: none; }
-.nav-tabs::-webkit-scrollbar { display: none; }
+.nav-tabs { display: flex; align-items: stretch; }
 .nav-tab {
   display: flex; align-items: center; gap: 6px;
   padding: 0 16px; font-size: 13px; font-weight: 600;
@@ -91,7 +90,6 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 .btn-gold    { background: var(--gold); color: var(--ink); }
 .btn-outline { background: transparent; border: 1px solid var(--rule); color: var(--ink-soft); }
 .btn-danger  { background: var(--red); color: #fff; }
-.btn-texted  { background: #E0E0E0 !important; color: #888 !important; }
 .btn-sm { padding: 6px 12px; font-size: 12px; }
 .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 
@@ -256,12 +254,10 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
 .result-crown { font-size: 30px; margin-bottom: 4px; }
 .result-winner { font-size: 20px; font-weight: 800; color: var(--gold-light); }
 .result-score { font-size: 13px; color: #8FBFAA; margin-top: 3px; }
-.result-table { width: 100%; margin-top: 14px; border-collapse: collapse; background: transparent; }
+.result-table { width: 100%; margin-top: 14px; border-collapse: collapse; }
 .result-table td { padding: 7px 8px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: left; }
 .result-table td:last-child { text-align: right; }
 .result-table tr:last-child td { border-bottom: none; }
-.result-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 10px; }
-.result-table-wrap .result-table { margin-bottom: 0 !important; min-width: 100%; }
 
 /* modal */
 .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; }
@@ -290,12 +286,6 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
   .form-row.col3 { grid-template-columns: 1fr 1fr; }
   .score-input { width: 64px; font-size: 22px; }
   .lb-pts { font-size: 20px; }
-  .nav { padding: 0 8px; }
-  .nav-brand { gap: 5px; margin-right: 8px; }
-  .nav-brand .title { display: none; }
-  #sync-status { font-size: 0 !important; }
-  #sync-status::before { content: '●'; font-size: 14px; }
-  .nav-tab { padding: 0 10px; font-size: 12px; gap: 4px; }
 }
 </style>
 </head>
@@ -303,26 +293,22 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
 
 <!-- NAV -->
 <nav class="nav">
-  <div class="nav-brand"><span class="title">Huntsville Quota Game</span></div>
+  <div class="nav-brand"><span class="flag">⛳</span><span class="title">Huntsville Stableford</span></div>
   <div style="flex:1;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;">
     <span id="sync-status" style="font-size:11px;color:var(--gold);">⏳ Syncing...</span>
   </div>
   <div class="nav-tabs">
-    <div class="nav-tab active" onclick="showScreen('profiles')" id="tab-profiles">👤 Players</div>
-    <div class="nav-tab" onclick="showScreen('setup')" id="tab-setup">🏌️ New Game</div>
+    <div class="nav-tab active" onclick="showScreen('profiles')" id="tab-profiles">👤 Profiles</div>
+    <div class="nav-tab" onclick="showScreen('setup')" id="tab-setup">🏌️ New Round</div>
     <div class="nav-tab" onclick="showScreen('scorecard')" id="tab-scorecard">📋 Scorecard</div>
-    <div class="nav-tab" onclick="showScreen('net')" id="tab-net">💰 Net</div>
   </div>
 </nav>
 
 <!-- ═══════════ PROFILES SCREEN ═══════════ -->
 <div id="screen-profiles" class="screen active">
   <div class="page">
-    <div style="text-align:center;padding:6px 0 14px;">
-      <div style="font-size:20px;font-weight:800;color:var(--green-deep);letter-spacing:-0.3px;">Huntsville Quota Game</div>
-    </div>
     <div class="section-head">
-      <span class="section-title">Players</span>
+      <span class="section-title">Player Profiles</span>
       <button class="btn btn-primary btn-sm" onclick="openProfileModal()">+ Add Player</button>
     </div>
 
@@ -348,7 +334,7 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
 <!-- ═══════════ SETUP SCREEN ═══════════ -->
 <div id="screen-setup" class="screen">
   <div class="page">
-    <div class="section-head"><span class="section-title">New Game</span></div>
+    <div class="section-head"><span class="section-title">New Round</span></div>
     <div class="panel">
       <div class="panel-head">Round Format</div>
       <div class="panel-body">
@@ -367,7 +353,6 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
               <label>Team Assignment</label>
               <select id="team-assign" onchange="onTeamAssignChange()">
                 <option value="auto">Auto — balance by variance</option>
-                <option value="random">100% Random — no variance balancing</option>
                 <option value="blind">Blind draw — random at end</option>
                 <option value="manual">Manual — I'll assign teams</option>
               </select>
@@ -380,17 +365,7 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
             </select>
             <div id="team-format-note" style="font-size:12px;color:var(--ink-soft);margin-top:5px;"></div>
           </div>
-          <div style="margin-bottom:14px;">
-            <label>Rules for the Day</label>
-            <select id="rules-for-day">
-              <option value="Down">Down</option>
-              <option value="Up in Fairway only">Up in Fairway only</option>
-              <option value="Up in Fairways and Bunkers">Up in Fairways and Bunkers</option>
-              <option value="Up In Bunkers only">Up In Bunkers only</option>
-              <option value="Up Everywhere">Up Everywhere</option>
-            </select>
-          </div>
-          <div class="btn-row"><button class="btn btn-gold" style="width:100%;justify-content:center;font-size:16px;padding:14px;" onclick="startRound()">▶ Start Round</button></div>
+          <div class="btn-row"><button class="btn btn-gold" onclick="startRound()">▶ Start Round</button></div>
         </div>
       </div>
     </div>
@@ -416,9 +391,6 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
         <button class="btn btn-danger btn-sm" onclick="abandonRound()">✕ Abandon</button>
       </div>
     </div>
-    <div class="btn-row" style="margin-bottom:14px;">
-      <button class="btn btn-gold btn-sm" onclick="openNotifyModal()">📱 Text Pairings</button>
-    </div>
     <div class="leaderboard" id="leaderboard"></div>
     <div class="panel" id="team-scores-panel" style="display:none;">
       <div class="panel-head">Team Scores</div>
@@ -434,25 +406,9 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
     </div>
     <div class="quota-bar-wrap" id="quota-bars"></div>
     <div style="padding:16px 0;">
-      <button id="finish-round-btn" class="btn btn-gold" style="width:100%;justify-content:center;font-size:16px;padding:14px;" onclick="finishRound()">🏆 Finish Round</button>
+      <button class="btn btn-gold" style="width:100%;justify-content:center;font-size:16px;padding:14px;" onclick="finishRound()">🏆 Finish Round</button>
     </div>
     <div id="result-banner"></div>
-    <div class="btn-row" style="margin:16px 0;">
-      <button class="btn btn-outline" style="width:100%;justify-content:center;" onclick="openPastGamesModal()">📅 Past Games</button>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════ NET RESULTS SCREEN ═══════════ -->
-<div id="screen-net" class="screen">
-  <div class="page">
-    <div class="section-head"><span class="section-title">Net Results</span></div>
-    <div class="panel">
-      <div class="panel-head">Paid In vs Cashed Out — All Games</div>
-      <div class="panel-body" style="padding:0;overflow-x:auto;">
-        <div id="net-results-body"></div>
-      </div>
-    </div>
   </div>
 </div>
 
@@ -505,7 +461,7 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
       <input type="hidden" id="edit-pid">
       <div class="form-row col2">
         <div><label>Name</label><input type="text" id="m-name" placeholder="Full name"></div>
-        <div><label>Quota</label><input type="number" id="m-quota" placeholder="e.g. 22" min="0" max="72" step="1"></div>
+        <div><label>Quota</label><input type="number" id="m-quota" placeholder="e.g. 22" min="0" max="72"></div>
       </div>
       <div class="form-row col2" style="margin-bottom:14px;">
         <div>
@@ -517,10 +473,7 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
             <option value="White" selected>⚪ White</option>
           </select>
         </div>
-        <div>
-          <label>Cell Number</label>
-          <input type="text" id="m-cell" placeholder="555-123-4567">
-        </div>
+        <div><label>Phone</label><input type="text" id="m-phone" placeholder="(570) 555-0123"></div>
       </div>
       <div class="team-explainer">
         <strong>Team Number</strong> is calculated automatically from the last 7 rounds — taking 5 middle scores (dropping the highest and lowest) and averaging them. It updates after each finished round. A player needs at least 3 rounds to get a team number.
@@ -530,45 +483,6 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
     <div class="modal-foot">
       <button class="btn btn-outline btn-sm" onclick="closeProfileModal()">Cancel</button>
       <button class="btn btn-primary btn-sm" onclick="saveProfile()">Save Player</button>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════ NOTIFY (TEXT PAIRINGS) MODAL ═══════════ -->
-<div class="modal-overlay" id="notify-modal">
-  <div class="modal" style="max-width:440px;">
-    <div class="modal-head">
-      <span>Text Pairings</span>
-      <button class="close-btn" onclick="closeNotifyModal()">×</button>
-    </div>
-    <div class="modal-body">
-      <label>Message Preview (editable)</label>
-      <textarea id="notify-message" rows="8" style="width:100%;padding:8px 10px;border:1px solid var(--rule);border-radius:4px;font-size:12px;font-family:inherit;color:var(--ink);background:var(--fairway);outline:none;resize:vertical;"></textarea>
-      <div class="btn-row" style="margin-top:8px;">
-        <button class="btn btn-outline btn-sm" onclick="copyPairingsMessage()">📋 Copy Message</button>
-      </div>
-      <div style="border-top:1px solid var(--rule);margin-top:14px;padding-top:12px;">
-        <label style="margin-bottom:8px;">Send To</label>
-        <div id="notify-recipients"></div>
-      </div>
-    </div>
-    <div class="modal-foot">
-      <button class="btn btn-outline btn-sm" onclick="closeNotifyModal()">Close</button>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════ PAST GAMES MODAL ═══════════ -->
-<div class="modal-overlay" id="past-games-modal">
-  <div class="modal" style="max-width:520px;">
-    <div class="modal-head">
-      <span id="pg-modal-title">Past Games</span>
-      <button class="close-btn" onclick="closePastGamesModal()">×</button>
-    </div>
-    <div class="modal-body" id="pg-modal-body" style="max-height:65vh;overflow-y:auto;padding:0;">
-    </div>
-    <div class="modal-foot">
-      <button class="btn btn-outline btn-sm" onclick="closePastGamesModal()">Close</button>
     </div>
   </div>
 </div>
@@ -781,7 +695,6 @@ function showScreen(id) {
   document.getElementById('tab-' + id).classList.add('active');
   if (id === 'profiles') renderProfiles();
   if (id === 'setup')    renderSetup();
-  if (id === 'net')      renderNetResults();
 }
 
 // ══════════════════════════════════════
@@ -858,7 +771,12 @@ function renderProfiles() {
   noP.style.display = 'none';
 
   const history = loadHistory();
-  const sortedProfiles = [...profiles].sort((a, b) => a.name.localeCompare(b.name));
+  const sortedProfiles = [...profiles].sort((a, b) => {
+    const aRounds = history.filter(r => r.players.some(rp => rp.id === a.id)).length;
+    const bRounds = history.filter(r => r.players.some(rp => rp.id === b.id)).length;
+    if (bRounds !== aRounds) return bRounds - aRounds;
+    return a.name.localeCompare(b.name);
+  });
   grid.innerHTML = sortedProfiles.map((p) => {
     const idx      = profiles.indexOf(p);
     const color    = PLAYER_COLORS[idx % PLAYER_COLORS.length];
@@ -874,12 +792,12 @@ function renderProfiles() {
       <div class="avatar" style="background:${color}">${initials(p.name)}</div>
       <div style="flex:1;min-width:0;">
         <div class="p-name">${p.name}</div>
+        ${p.phone ? `<div class="p-meta">📞 ${p.phone}</div>` : ''}
         <div class="profile-badges" style="margin-top:4px;">
           <span class="p-badge p-badge-quota">Q: ${p.quota}</span>
           <span class="p-badge" style="background:${teeBadgeColor(p.tee)};color:${teeBadgeText(p.tee)};border:1px solid rgba(0,0,0,0.08)">${teeBadgeIcon(p.tee)} ${p.tee||'White'}</span>
           ${teamBadge}
         </div>
-        ${p.cell ? `<div style="font-size:11px;color:var(--ink-soft);margin-top:4px;">📱 ${p.cell}</div>` : ''}
       </div>
       <div class="card-actions" style="position:static;flex-shrink:0;">
         <button class="icon-btn" title="Edit"
@@ -907,7 +825,7 @@ function renderProfileDetail(pid) {
   const allHistory = loadHistory().filter(r => r.players.some(rp => rp.id === pid));
   const detail = document.getElementById('profile-detail');
   detail.style.display = 'block';
-  document.getElementById('detail-head').textContent = `${p.name} — Round History`;
+  document.getElementById('detail-head').textContent = `${p.name}${p.phone ? ' — ' + p.phone : ''} — Round History`;
 
   // Stats
   let beats = 0, totalPts = 0, totalVQ = 0, best = null;
@@ -1020,7 +938,7 @@ function openProfileModal(pid) {
     document.getElementById('m-name').value  = p.name;
     document.getElementById('m-quota').value = p.quota;
     document.getElementById('m-tee').value   = p.tee || 'White';
-    document.getElementById('m-cell').value  = p.cell || '';
+    document.getElementById('m-phone').value = p.phone || '';
     // Show team number preview
     const tn = calcTeamNumber(pid);
     const prev = document.getElementById('modal-team-preview');
@@ -1036,7 +954,7 @@ function openProfileModal(pid) {
     document.getElementById('m-name').value  = '';
     document.getElementById('m-quota').value = '';
     document.getElementById('m-tee').value   = 'White';
-    document.getElementById('m-cell').value  = '';
+    document.getElementById('m-phone').value = '';
     document.getElementById('modal-team-preview').style.display = 'none';
   }
   document.getElementById('profile-modal').classList.add('open');
@@ -1051,15 +969,15 @@ function saveProfile() {
   if (!name) { alert('Enter a name.'); return; }
   const quota = parseInt(document.getElementById('m-quota').value) || 0;
   const tee   = document.getElementById('m-tee').value || 'White';
-  const cell  = document.getElementById('m-cell').value.trim();
+  const phone = document.getElementById('m-phone').value.trim();
   const pid   = document.getElementById('edit-pid').value;
 
   const profiles = loadProfiles();
   if (pid) {
     const idx = profiles.findIndex(p => p.id === pid);
-    if (idx >= 0) profiles[idx] = { ...profiles[idx], name, quota, tee, cell };
+    if (idx >= 0) profiles[idx] = { ...profiles[idx], name, quota, tee, phone };
   } else {
-    profiles.push({ id: genId(), name, quota, tee, cell });
+    profiles.push({ id: genId(), name, quota, tee, phone });
   }
   saveProfiles(profiles);
   closeProfileModal();
@@ -1116,7 +1034,13 @@ function renderSetup() {
 
   document.getElementById('player-panel-head').textContent = `Select Players${setupSelected.length > 0 ? ' — ' + setupSelected.length + ' selected' : ''}`;
 
-  const sortedForPicker = [...profiles].sort((a, b) => a.name.localeCompare(b.name));
+  const historyForSort = loadHistory();
+  const sortedForPicker = [...profiles].sort((a, b) => {
+    const aR = historyForSort.filter(r => r.players.some(rp => rp.id === a.id)).length;
+    const bR = historyForSort.filter(r => r.players.some(rp => rp.id === b.id)).length;
+    if (bR !== aR) return bR - aR;
+    return a.name.localeCompare(b.name);
+  });
   picker.innerHTML = sortedForPicker.map((p) => {
     const idx   = profiles.indexOf(p);
     const color = PLAYER_COLORS[idx % PLAYER_COLORS.length];
@@ -1188,15 +1112,12 @@ function getTeamConfigs(n) {
     }
   }
   partition(n, 2, []);
-  // Remove duplicates (same multiset), and any config where team sizes
-  // differ by more than 1 player (e.g. reject 4/3/2 — keep only 4/3, 4/4,
-  // 3/3, etc. so no team is meaningfully bigger than another).
+  // Remove duplicates (same multiset)
   const seen = new Set();
   return configs.filter(cfg => {
     const key = [...cfg].sort().join(',');
     if (seen.has(key)) return false;
-    seen.add(key);
-    return (Math.max(...cfg) - Math.min(...cfg)) <= 1;
+    seen.add(key); return true;
   }).map(cfg => {
     const sorted = [...cfg].sort((a,b)=>b-a); // largest teams first
     const counts = {};
@@ -1298,26 +1219,6 @@ function autoAssignTeams(players, sizes) {
   return teams;
 }
 
-// Fully random team assignment — no quota/variance balancing at all.
-// Just shuffles everyone and deals them into teams of the given sizes.
-function randomAssignTeams(players, sizes) {
-  const shuffled = [...players];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  const sortedSizes = [...sizes].sort((a,b)=>b-a);
-  const teams = sortedSizes.map((sz, i) => ({ id: i+1, name: `Team ${i+1}`, players: [], target: sz }));
-  shuffled.forEach(p => {
-    const available = teams.filter(t => t.players.length < t.target);
-    // Pick uniformly at random among teams that still have room, rather
-    // than always the most-open team, so the deal has no systematic bias.
-    const pick = available[Math.floor(Math.random() * available.length)];
-    pick.players.push(p);
-  });
-  return teams;
-}
-
 // Manual assignment state
 let manualTeams = []; // [{id,name,players:[]}]
 
@@ -1404,7 +1305,6 @@ function startRound() {
   const cfgSizes   = selectedConfig(); // array of team sizes e.g. [2,2] or [3,4]
   const isTeamGame = cfgSizes && cfgSizes.length > 1;
   const fmt        = 'teams';
-  const rulesForDay = document.getElementById('rules-for-day').value;
 
   const profiles = loadProfiles();
   const players  = setupSelected.map(pid => {
@@ -1413,7 +1313,7 @@ function startRound() {
     const roundTee   = setupTees[pid] || defaultTee;
     const teeAdj     = teeQuotaAdjustment(defaultTee, roundTee);
     const adjQuota   = p.quota + teeAdj;
-    return { id: p.id, name: p.name, quota: adjQuota, baseQuota: p.quota, tee: roundTee, defaultTee, teeAdj, cell: p.cell || '', color: PLAYER_COLORS[profiles.indexOf(p) % PLAYER_COLORS.length] };
+    return { id: p.id, name: p.name, quota: adjQuota, baseQuota: p.quota, tee: roundTee, defaultTee, teeAdj, color: PLAYER_COLORS[profiles.indexOf(p) % PLAYER_COLORS.length] };
   });
 
   // Determine teams
@@ -1436,10 +1336,6 @@ function startRound() {
       // Same variance-based snake draft as auto, just hidden during the round
       const autoTeams = autoAssignTeams(players, cfgSizes);
       teams = autoTeams.map(t => ({ id: t.id, name: t.name, playerIds: t.players.map(p => p.id) }));
-    } else if (assignMethod === 'random') {
-      // 100% random — no quota/variance balancing at all
-      const randTeams = randomAssignTeams(players, cfgSizes);
-      teams = randTeams.map(t => ({ id: t.id, name: t.name, playerIds: t.players.map(p => p.id) }));
     } else {
       // Auto — balance by variance
       const autoTeams = autoAssignTeams(players, cfgSizes);
@@ -1452,12 +1348,11 @@ function startRound() {
 
   const assignMethod = document.getElementById('team-assign').value;
   const blindDraw = assignMethod === 'blind';
-  state = { numHoles, hasFrontBack, players, date, quotaGame, scores, isTeamGame, teams, fmt, blindDraw, rulesForDay };
+  state = { numHoles, hasFrontBack, players, date, quotaGame, scores, isTeamGame, teams, fmt, blindDraw };
   manualTeams = [];
 
   showScreen('scorecard');
   document.getElementById('result-banner').style.display = 'none';
-  document.getElementById('finish-round-btn').style.display = '';
   renderScorecard();
 }
 
@@ -1471,87 +1366,9 @@ function totalPoints(pid) {
   return f + b;
 }
 
-// Sanitizes to digits only, caps at 2 digits, updates state, refreshes just
-// this player's row (and team header/leaderboard/quota bars) without
-// re-rendering the score inputs themselves — so focus and the on-screen
-// keyboard are never lost. Auto-advances to the next score box once 2
-// digits have been entered.
-function handleScoreInput(el, pid, half) {
-  const digits = el.value.replace(/\D/g, '').slice(0, 2);
-  if (el.value !== digits) el.value = digits;
-  state.scores[pid][half] = digits === '' ? '' : parseInt(digits);
-
-  refreshPlayerRow(pid);
-  updateLeaderboard();
-  renderQuotaBars();
-
-  if (digits.length === 2) {
-    const inputs = Array.from(document.querySelectorAll('.score-input'));
-    const idx = inputs.indexOf(el);
-    if (idx > -1 && idx < inputs.length - 1) {
-      const next = inputs[idx + 1];
-      next.focus();
-      next.select();
-    } else {
-      el.blur();
-    }
-  }
-}
-
-// Updates just the TOTAL / vs-quota text for one player row, and that
-// player's team header total if applicable — everything except the score
-// inputs themselves.
-function refreshPlayerRow(pid) {
-  const p = state.players.find(x => x.id === pid);
-  if (!p) return;
-  const s    = state.scores[pid];
-  const tot  = totalPoints(pid);
-  const diff = tot - p.quota;
-  const hasScore = parseInt(s.front) > 0 || (s.back !== null && parseInt(s.back) > 0);
-  const vsQColor = diff > 0 ? 'var(--green-mid)' : diff < 0 ? 'var(--red)' : 'var(--ink-soft)';
-  const vsQStr   = hasScore ? `${diff >= 0 ? '+' : ''}${diff}` : '—';
-
-  const totEl = document.getElementById(`tot-${pid}`);
-  if (totEl) totEl.textContent = hasScore ? tot : '—';
-  const vsqEl = document.getElementById(`vsq-${pid}`);
-  if (vsqEl) { vsqEl.textContent = vsQStr; vsqEl.style.color = vsQColor; }
-
-  if (state.isTeamGame && state.teams && !state.blindDraw) {
-    const team = state.teams.find(t => t.playerIds.includes(pid));
-    if (team) {
-      const hdrEl = document.getElementById(`team-hdr-${team.id}`);
-      if (hdrEl) hdrEl.textContent = `${team.name.toUpperCase()} · ${teamTotal(team)} pts`;
-    }
-    renderTeamScoresPanel();
-  }
-}
-
-// Rebuilds the top "Team Scores" summary panel (safe to fully re-render —
-// it contains no inputs, so there's no focus/keyboard to preserve).
-function renderTeamScoresPanel() {
-  const { players, teams } = state;
-  const teamPanel = document.getElementById('team-scores-panel');
-  if (!(state.isTeamGame && teams.length > 0 && !state.blindDraw)) {
-    teamPanel.style.display = 'none';
-    return;
-  }
-  teamPanel.style.display = 'block';
-  const sortedTeams = [...teams].sort((a, b) => teamTotal(b) - teamTotal(a));
-  let tHtml = '';
-  sortedTeams.forEach((t, rank) => {
-    const tot = teamTotal(t);
-    const members = t.playerIds.map(pid => players.find(p => p.id === pid)?.name.split(' ')[0]).join(' & ');
-    const isLead = rank === 0 && tot > 0;
-    tHtml += `<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--rule);${isLead?'background:#F0F7F4;':''}">
-      <div style="font-size:20px;width:28px;text-align:center;">${rank===0&&tot>0?'🏆':rank===1?'🥈':rank===2?'🥉':'  '}</div>
-      <div style="flex:1;">
-        <div style="font-size:14px;font-weight:700;">${t.name}</div>
-        <div style="font-size:12px;color:var(--ink-soft);">${members}</div>
-      </div>
-      <div style="font-size:26px;font-weight:800;color:var(--green-deep);">${tot || '—'}</div>
-    </div>`;
-  });
-  document.getElementById('team-scores-body').innerHTML = tHtml;
+function updateScore(pid, half, val) {
+  state.scores[pid][half] = val === '' ? '' : parseInt(val);
+  renderScorecard();
 }
 
 function teamTotal(team) {
@@ -1561,10 +1378,31 @@ function teamTotal(team) {
 function renderScorecard() {
   const { players, quotaGame, hasFrontBack, isTeamGame, teams } = state;
   document.getElementById('sc-title').textContent = 'Scorecard';
-  document.getElementById('sc-meta').textContent  = state.date + (quotaGame ? ' · Quota game' : '') + (isTeamGame ? ' · ' + state.fmt : '') + (state.rulesForDay ? ' · ' + state.rulesForDay : '');
+  document.getElementById('sc-meta').textContent  = state.date + (quotaGame ? ' · Quota game' : '') + (isTeamGame ? ' · ' + state.fmt : '');
 
   // Team scores panel
-  renderTeamScoresPanel();
+  const teamPanel = document.getElementById('team-scores-panel');
+  if (isTeamGame && teams.length > 0 && !state.blindDraw) {
+    teamPanel.style.display = 'block';
+    const sortedTeams = [...teams].sort((a,b) => teamTotal(b) - teamTotal(a));
+    let tHtml = '';
+    sortedTeams.forEach((t, rank) => {
+      const tot = teamTotal(t);
+      const members = t.playerIds.map(pid => players.find(p => p.id === pid)?.name.split(' ')[0]).join(' & ');
+      const isLead = rank === 0 && tot > 0;
+      tHtml += `<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--rule);${isLead?'background:#F0F7F4;':''}">
+        <div style="font-size:20px;width:28px;text-align:center;">${rank===0&&tot>0?'🏆':rank===1?'🥈':rank===2?'🥉':'  '}</div>
+        <div style="flex:1;">
+          <div style="font-size:14px;font-weight:700;">${t.name}</div>
+          <div style="font-size:12px;color:var(--ink-soft);">${members}</div>
+        </div>
+        <div style="font-size:26px;font-weight:800;color:var(--green-deep);">${tot || '—'}</div>
+      </div>`;
+    });
+    document.getElementById('team-scores-body').innerHTML = tHtml;
+  } else {
+    teamPanel.style.display = 'none';
+  }
 
   // Individual score entry cards
   // Group by team for display when team game
@@ -1580,36 +1418,34 @@ function renderScorecard() {
     const teeInfo  = p.teeAdj && p.teeAdj !== 0
       ? ` <span style="color:${p.teeAdj>0?'var(--green-mid)':'var(--red)'}">incl. ${p.teeAdj>0?'+':''}${p.teeAdj} tee</span>` : '';
     return `
-    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;padding:12px 16px;border-bottom:1px solid var(--rule);">
-      <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:160px;">
-        <div style="width:34px;height:34px;border-radius:50%;background:${p.color};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex-shrink:0;">${initials(p.name)}</div>
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:14px;font-weight:700;margin-bottom:1px;">${p.name}</div>
-          <div style="font-size:11px;color:var(--ink-soft);">${teeBadgeIcon(p.tee)} ${p.tee||'White'}${quotaGame?` · Q: ${p.quota}${teeInfo}`:''}</div>
-        </div>
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--rule);">
+      <div style="width:34px;height:34px;border-radius:50%;background:${p.color};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex-shrink:0;">${initials(p.name)}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:700;margin-bottom:1px;">${p.name}</div>
+        <div style="font-size:11px;color:var(--ink-soft);">${teeBadgeIcon(p.tee)} ${p.tee||'White'}${quotaGame?` · Q: ${p.quota}${teeInfo}`:''}</div>
       </div>
-      <div style="display:flex;gap:10px;align-items:center;width:100%;padding-left:46px;">
+      <div style="display:flex;gap:10px;align-items:center;flex-shrink:0;">
         <div style="text-align:center;">
           <div style="font-size:11px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;">FRONT</div>
-          <input class="score-input" id="in-${p.id}-front" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" placeholder="—" value="${s.front}"
+          <input class="score-input" type="number" min="0" max="100" placeholder="—" value="${s.front}"
             tabindex="${tabIdx++}"
-            oninput="handleScoreInput(this,'${p.id}','front')">
+            onchange="updateScore('${p.id}','front',this.value)" onblur="updateScore('${p.id}','front',this.value)">
         </div>
         ${hasFrontBack ? `
         <div style="text-align:center;">
           <div style="font-size:11px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;">BACK</div>
-          <input class="score-input" id="in-${p.id}-back" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" placeholder="—" value="${s.back}"
+          <input class="score-input" type="number" min="0" max="100" placeholder="—" value="${s.back}"
             tabindex="${tabIdx++}"
-            oninput="handleScoreInput(this,'${p.id}','back')">
+            onchange="updateScore('${p.id}','back',this.value)" onblur="updateScore('${p.id}','back',this.value)">
         </div>
         <div style="text-align:center;min-width:44px;border-left:1px solid var(--rule);padding-left:10px;">
           <div style="font-size:11px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;">TOTAL</div>
-          <div id="tot-${p.id}" style="font-size:20px;font-weight:800;color:var(--green-deep);line-height:1.2;">${hasScore ? tot : '—'}</div>
-          ${quotaGame ? `<div id="vsq-${p.id}" style="font-size:11px;font-weight:700;color:${vsQColor};margin-top:2px;">${vsQStr}</div>` : ''}
+          <div style="font-size:20px;font-weight:800;color:var(--green-deep);line-height:1.2;">${hasScore ? tot : '—'}</div>
+          ${quotaGame ? `<div style="font-size:11px;font-weight:700;color:${vsQColor};margin-top:2px;">${vsQStr}</div>` : ''}
         </div>` : `
         ${quotaGame ? `<div style="text-align:center;min-width:44px;border-left:1px solid var(--rule);padding-left:10px;">
           <div style="font-size:9px;font-weight:600;color:var(--ink-soft);margin-bottom:3px;">VS Q</div>
-          <div id="vsq-${p.id}" style="font-size:18px;font-weight:800;color:${vsQColor};line-height:1.2;">${vsQStr}</div>
+          <div style="font-size:18px;font-weight:800;color:${vsQColor};line-height:1.2;">${vsQStr}</div>
         </div>` : ''}`}
       </div>
     </div>`;
@@ -1618,7 +1454,7 @@ function renderScorecard() {
   if (isTeamGame && teams.length > 0 && !state.blindDraw) {
     teams.forEach(t => {
       const tot = teamTotal(t);
-      entryHtml += `<div id="team-hdr-${t.id}" style="background:var(--green-deep);color:#fff;padding:7px 16px;font-size:11px;font-weight:700;letter-spacing:0.3px;">${t.name.toUpperCase()} · ${tot} pts</div>`;
+      entryHtml += `<div style="background:var(--green-deep);color:#fff;padding:7px 16px;font-size:11px;font-weight:700;letter-spacing:0.3px;">${t.name.toUpperCase()} · ${tot} pts</div>`;
       t.playerIds.forEach(pid => {
         const p = players.find(x => x.id === pid);
         if (p) entryHtml += renderPlayer(p);
@@ -1692,303 +1528,8 @@ function renderQuotaBars() {
 }
 
 // ══════════════════════════════════════
-// TEXT PAIRINGS
-// ══════════════════════════════════════
-function buildPairingsMessage() {
-  const { date, isTeamGame, teams, players, blindDraw, rulesForDay } = state;
-  const lines = [`⛳ Huntsville Stableford – ${date}`];
-  if (rulesForDay) lines.push(`Rules for the day: ${rulesForDay}`);
-
-  if (isTeamGame && teams && teams.length > 0 && !blindDraw) {
-    lines.push(`Format: ${teams.length} teams (${teams.map(t=>t.playerIds.length).join('/')} players) · Stableford quota game`);
-    lines.push('');
-    teams.forEach(t => {
-      const names = t.playerIds.map(pid => players.find(p => p.id === pid)?.name).filter(Boolean).join(', ');
-      lines.push(`${t.name}: ${names}`);
-    });
-  } else if (isTeamGame && blindDraw) {
-    lines.push(`Format: ${teams.length} teams (${teams.map(t=>t.playerIds.length).join('/')} players) · Stableford quota game`);
-    lines.push('Teams are a blind draw — revealed when the round is finished!');
-    lines.push('');
-    lines.push(`Players: ${players.map(p => p.name).join(', ')}`);
-  } else {
-    lines.push('Format: Individual Stableford quota game');
-    lines.push('');
-    lines.push(`Players: ${players.map(p => p.name).join(', ')}`);
-  }
-
-  lines.push('');
-  lines.push('Quotas:');
-  players.forEach(p => lines.push(`${p.name}: ${p.quota} (${p.tee || 'White'} tees)`));
-
-  return lines.join('\n');
-}
-
-// sms: URI — "?&body=" prefix is a cross-platform trick that pre-fills the
-// message body on both iOS and Android without breaking either one.
-function smsLink(cell, message) {
-  const digits = (cell || '').replace(/[^\d+]/g, '');
-  return `sms:${digits}?&body=${encodeURIComponent(message)}`;
-}
-
-function openNotifyModal() {
-  if (!state.players || state.players.length === 0) return;
-  const msg = buildPairingsMessage();
-  document.getElementById('notify-message').value = msg;
-
-  const rows = state.players.map(p => {
-    const hasCell = !!p.cell;
-    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #F0EDE6;">
-      <div style="width:30px;height:30px;border-radius:50%;background:${p.color};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0;">${initials(p.name)}</div>
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:13px;font-weight:700;">${p.name}</div>
-        <div style="font-size:11px;color:var(--ink-soft);">${hasCell ? p.cell : 'No cell number on file'}</div>
-      </div>
-      ${hasCell
-        ? `<a class="btn btn-primary btn-sm" data-pid="${p.id}" href="${smsLink(p.cell, msg)}" onclick="markTexted(this)">📱 Text</a>`
-        : `<button class="btn btn-outline btn-sm" disabled style="opacity:0.5;cursor:not-allowed;">📱 Text</button>`}
-    </div>`;
-  }).join('');
-  document.getElementById('notify-recipients').innerHTML = rows;
-
-  document.getElementById('notify-modal').classList.add('open');
-}
-
-function closeNotifyModal() {
-  document.getElementById('notify-modal').classList.remove('open');
-}
-
-// ══════════════════════════════════════
-// PAST GAMES
-// ══════════════════════════════════════
-// NET RESULTS — paid vs cashed across all games, split by Team / Indy / Total
-// ══════════════════════════════════════
-function renderNetResults() {
-  const profiles = loadProfiles();
-  const history  = loadHistory();
-  const body = document.getElementById('net-results-body');
-
-  const stats = profiles.map(p => {
-    let teamPaid = 0, teamWon = 0, indyPaid = 0, indyWon = 0, rounds = 0;
-    history.forEach(h => {
-      const rp = h.players.find(x => x.id === p.id);
-      if (!rp) return;
-      rounds++;
-      if (rp.teamPaid !== undefined || rp.indyPaid !== undefined) {
-        // Current format: team and indy tracked separately.
-        teamPaid += rp.teamPaid || 0;
-        teamWon  += rp.teamWon  || 0;
-        indyPaid += rp.indyPaid || 0;
-        indyWon  += rp.indyWon  || 0;
-      } else {
-        // Older rounds only recorded a combined paid/won — count it as indy
-        // since that's the only component every round always had.
-        indyPaid += rp.paid || 0;
-        indyWon  += rp.won  || 0;
-      }
-    });
-    const totalPaid = teamPaid + indyPaid;
-    const totalWon  = teamWon + indyWon;
-    const net = totalWon - totalPaid;
-    const pct = totalPaid > 0 ? (net / totalPaid) * 100 : 0;
-    return { name: p.name, rounds, teamPaid, teamWon, indyPaid, indyWon, totalPaid, totalWon, net, pct };
-  }).filter(s => s.rounds > 0)
-    .sort((a, b) => b.net - a.net);
-
-  if (stats.length === 0) {
-    body.innerHTML = '<div class="empty-state"><div class="icon">💰</div><p>No completed games yet.</p></div>';
-    return;
-  }
-
-  const fmt = v => `$${Math.round(v)}`;
-  const cards = stats.map(s => {
-    const netColor = s.net > 0 ? '#1B4D3E' : s.net < 0 ? '#C0392B' : '#999';
-    const netStr   = `${s.net >= 0 ? '+' : ''}${fmt(s.net)}`;
-    const pctStr   = `${s.pct >= 0 ? '+' : ''}${s.pct.toFixed(0)}%`;
-    const teamNet  = s.teamWon - s.teamPaid;
-    const indyNet  = s.indyWon - s.indyPaid;
-    const rowColor = v => v > 0 ? '#2E6B54' : v < 0 ? '#C0392B' : '#999';
-    return `
-    <div style="border-bottom:1px solid var(--rule);padding:12px 14px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-        <div style="font-size:14px;font-weight:700;">${s.name} <span style="font-weight:400;color:var(--ink-soft);font-size:11px;">(${s.rounds} round${s.rounds!==1?'s':''})</span></div>
-        <div style="text-align:right;">
-          <div style="font-size:16px;font-weight:800;color:${netColor};">${netStr}</div>
-          <div style="font-size:11px;font-weight:700;color:${netColor};">${pctStr}</div>
-        </div>
-      </div>
-      <table style="width:100%;border-collapse:collapse;font-size:12px;">
-        <thead><tr style="color:var(--ink-soft);">
-          <td></td><td style="text-align:right;">Paid</td><td style="text-align:right;">Cashed</td><td style="text-align:right;">Net</td>
-        </tr></thead>
-        <tbody>
-          <tr><td>Team</td><td style="text-align:right;">${fmt(s.teamPaid)}</td><td style="text-align:right;">${fmt(s.teamWon)}</td><td style="text-align:right;color:${rowColor(teamNet)};font-weight:700;">${teamNet>=0?'+':''}${fmt(teamNet)}</td></tr>
-          <tr><td>Indy</td><td style="text-align:right;">${fmt(s.indyPaid)}</td><td style="text-align:right;">${fmt(s.indyWon)}</td><td style="text-align:right;color:${rowColor(indyNet)};font-weight:700;">${indyNet>=0?'+':''}${fmt(indyNet)}</td></tr>
-          <tr style="border-top:1px solid var(--rule);font-weight:700;"><td>Total</td><td style="text-align:right;">${fmt(s.totalPaid)}</td><td style="text-align:right;">${fmt(s.totalWon)}</td><td style="text-align:right;color:${netColor};">${netStr}</td></tr>
-        </tbody>
-      </table>
-    </div>`;
-  }).join('');
-
-  body.innerHTML = `
-    ${cards}
-    <div style="padding:10px 14px;font-size:11px;color:var(--ink-soft);">
-      Net % = net $ ÷ total paid in. Rounds played before this tracker was added count toward Indy only (no Team/Indy split was recorded yet).
-    </div>`;
-}
-
-function openPastGamesModal() {
-  renderPastGamesList();
-  document.getElementById('past-games-modal').classList.add('open');
-}
-
-function closePastGamesModal() {
-  document.getElementById('past-games-modal').classList.remove('open');
-}
-
-function renderPastGamesList() {
-  document.getElementById('pg-modal-title').textContent = 'Past Games';
-  const history = [...loadHistory()].reverse(); // newest first
-  const body = document.getElementById('pg-modal-body');
-  if (history.length === 0) {
-    body.innerHTML = '<div class="empty-state"><div class="icon">📅</div><p>No past games yet.</p></div>';
-    return;
-  }
-  body.innerHTML = history.map(h => {
-    const sorted = [...h.players].sort((a, b) => b.points - a.points);
-    const winner = sorted[0];
-    return `<div class="player-pick-row" style="cursor:pointer;padding:12px 16px;" onclick="viewPastGame('${h.id}')">
-      <div style="flex:1;min-width:0;">
-        <div class="pick-name">${h.date}</div>
-        <div class="pick-meta">${h.players.length} players · ${h.holes} holes · 🏆 ${winner ? winner.name + ' (' + winner.points + ' pts)' : '—'}</div>
-      </div>
-      <div style="font-size:20px;color:var(--ink-soft);flex-shrink:0;">›</div>
-    </div>`;
-  }).join('');
-}
-
-function pastGamePlayerRow(p, rank) {
-  const diff    = p.points - p.quota;
-  const bClass  = diff > 0 ? 'badge-beat' : diff === 0 ? 'badge-met' : 'badge-miss';
-  const diffStr = diff > 0 ? `+${diff}` : `${diff}`;
-  const medal   = rank === 0 ? '🥇' : rank === 1 ? '🥈' : rank === 2 ? '🥉' : `${rank + 1}.`;
-  const qChange = p.quotaChange;
-  let qChangeStr = '—';
-  if (qChange != null && qChange !== 0) {
-    const col   = qChange > 0 ? '#2E6B54' : '#C0392B';
-    const arrow = qChange > 0 ? '▲' : '▼';
-    qChangeStr  = `<span style="color:${col};font-weight:700;">${arrow} ${Math.abs(qChange)}</span> → ${p.newQuota}`;
-  } else if (p.newQuota != null) {
-    qChangeStr = `— ${p.newQuota}`;
-  }
-  const frontDisp = p.front != null ? p.front : '–';
-  const backDisp  = p.back  != null ? p.back  : '–';
-  return `<tr>
-    <td>${medal} ${p.name}</td>
-    <td>${teeBadgeIcon(p.tee)} ${p.tee || '–'}</td>
-    <td>${p.quota}</td>
-    <td>${frontDisp}</td>
-    <td>${backDisp}</td>
-    <td><strong>${p.points}</strong></td>
-    <td><span class="badge ${bClass}">${diffStr}</span></td>
-    <td>${qChangeStr}</td>
-  </tr>`;
-}
-
-const PAST_GAME_TABLE_HEAD =
-  '<thead><tr><th>Player</th><th>Tee</th><th>Quota</th><th>Front</th><th>Back</th><th>Total</th><th>vs Q</th><th>New Q</th></tr></thead>';
-
-function viewPastGame(id) {
-  const history = loadHistory();
-  const h = history.find(x => x.id === id);
-  const body = document.getElementById('pg-modal-body');
-  if (!h) return;
-
-  document.getElementById('pg-modal-title').innerHTML =
-    `<span style="cursor:pointer" onclick="renderPastGamesList()">← </span>${h.date}`;
-
-  let html = '';
-  if (h.rulesForDay) {
-    html += `<div style="padding:8px 14px;font-size:12px;color:var(--ink-soft);border-bottom:1px solid var(--rule);background:#F9F7F3;">Rules for the day: <strong style="color:var(--ink);">${h.rulesForDay}</strong></div>`;
-  }
-
-  // ── Scorecard (front/back/total), grouped by team when it was a team game ──
-  if (h.isTeamGame && h.teams && h.teams.length > 0) {
-    html += h.teams.map(t => {
-      const teamPlayers = t.playerIds.map(pid => h.players.find(p => p.id === pid)).filter(Boolean);
-      const teamPts = teamPlayers.reduce((s, p) => s + p.points, 0);
-      const sortedTeam = [...teamPlayers].sort((a, b) => b.points - a.points);
-      const rows = sortedTeam.map((p, i) => pastGamePlayerRow(p, i)).join('');
-      return `
-        <div style="background:var(--green-deep);color:#fff;padding:7px 16px;font-size:11px;font-weight:700;letter-spacing:0.3px;">${t.name.toUpperCase()} · ${teamPts} pts</div>
-        <div style="overflow-x:auto;">
-          <table class="history-table">${PAST_GAME_TABLE_HEAD}<tbody>${rows}</tbody></table>
-        </div>`;
-    }).join('');
-  } else {
-    const sorted = [...h.players].sort((a, b) => b.points - a.points);
-    const rows = sorted.map((p, i) => pastGamePlayerRow(p, i)).join('');
-    html += `<div style="overflow-x:auto;"><table class="history-table">${PAST_GAME_TABLE_HEAD}<tbody>${rows}</tbody></table></div>`;
-  }
-
-  // ── Full results & payouts, reconstructed from the saved round data —
-  // same team/individual results and payout breakdown shown live when the
-  // round was finished. ──
-  const ranked = h.players.map(p => ({ ...p, pts: p.points }));
-  const scores = {};
-  h.players.forEach(p => { scores[p.id] = { front: p.front, back: p.back }; });
-  const result = buildResultsHtml({
-    players: h.players,
-    teams: h.teams,
-    isTeamGame: h.isTeamGame,
-    hasFrontBack: true,
-    scores,
-    ranked,
-    blindDraw: false
-  });
-  html += `<div style="background:var(--green-deep);color:var(--white);padding:16px;text-align:center;">${result.html}</div>`;
-
-  body.innerHTML = html;
-}
-
-// Grey out a Text button once tapped so it's clear who's already been sent
-// the message. Still tappable again (e.g. to resend) — just visually marked.
-function markTexted(el) {
-  el.classList.add('btn-texted');
-  el.textContent = '✓ Sent';
-}
-
-function copyPairingsMessage() {
-  const msg = document.getElementById('notify-message').value;
-  navigator.clipboard.writeText(msg).then(() => {
-    alert('Message copied to clipboard.');
-  }).catch(() => {
-    alert('Could not copy automatically — select the text and copy manually.');
-  });
-}
-
-// Rebuild the send links if the user edits the message text before sending
-document.addEventListener('input', (e) => {
-  if (e.target && e.target.id === 'notify-message') {
-    const msg = e.target.value;
-    document.querySelectorAll('#notify-recipients a[data-pid]').forEach(a => {
-      const p = state.players.find(x => x.id === a.dataset.pid);
-      if (p) a.href = smsLink(p.cell, msg);
-    });
-  }
-});
-
-// ══════════════════════════════════════
 // QUOTA ADJUSTMENT
-// 50% of diff, capped at +2 / -1. Missing quota is NOT rounded to the
-// nearest whole number — missing by 1 point is a genuine -0.5 change,
-// not a wash. Beating quota still rounds to a whole-point gain.
-// ══════════════════════════════════════
-// ══════════════════════════════════════
-// QUOTA ADJUSTMENT
-// 50% of diff, capped at +2 / -1, always a whole number. Missing quota
-// rounds DOWN (away from zero) rather than to nearest, so missing by
-// just 1 point still costs a full point — it never rounds away to 0.
+// 50% of diff, max +2, max -1, rounded to whole number
 // ══════════════════════════════════════
 function calcNewQuota(currentQuota, points) {
   const diff = points - currentQuota;
@@ -1997,7 +1538,7 @@ function calcNewQuota(currentQuota, points) {
   if (diff > 0) {
     change = Math.min(2, Math.round(diff * 0.5));
   } else {
-    change = Math.max(-1, Math.floor(diff * 0.5));
+    change = Math.max(-1, Math.round(diff * 0.5));
   }
   return currentQuota + change;
 }
@@ -2005,338 +1546,7 @@ function calcNewQuota(currentQuota, points) {
 // ══════════════════════════════════════
 // FINISH ROUND
 // ══════════════════════════════════════
-// ══════════════════════════════════════
-// Builds the full results HTML (team section, team payouts, individual
-// result, individual payouts, payout recap) from a normalized context.
-// Pure / no side effects — used both for a just-finished round (live)
-// and for reconstructing a past round's full results from history.
-//   ctx = { players, teams, isTeamGame, hasFrontBack, scores, ranked, blindDraw }
-//     players: [{id, name, quota, ...}]   — round-adjusted quota
-//     teams:   [{id, name, playerIds}] or null
-//     scores:  { [pid]: { front, back } }
-//     ranked:  [{id, name, quota, pts, newQuota, quotaChange}]
-// Returns { html, playerTeamPayout, indivPayoutRows, teamStakeByPid }.
-// ══════════════════════════════════════
-function buildResultsHtml(ctx) {
-  const { players, teams, isTeamGame, hasFrontBack, scores, ranked, blindDraw } = ctx;
-
-  const ptsOf     = pid => ranked.find(r => r.id === pid)?.pts || 0;
-  const teamPtsOf = t   => t.playerIds.reduce((s, pid) => s + ptsOf(pid), 0);
-
-  // ── Individual winner: highest delta (pts - quota) ──
-  const withDelta = ranked.map(r => ({ ...r, delta: r.pts - r.quota }))
-    .sort((a, b) => b.delta - a.delta);
-  const topIndivDelta = withDelta[0].delta;
-  const indivWinners  = withDelta.filter(r => r.delta === topIndivDelta);
-  const indivTie      = indivWinners.length > 1;
-
-  // ── Team winner: which team wins Front / Back / Total ──
-  let teamSection = '';
-  const fmtMoney = v => `$${Math.round(v)}`;
-  const fmtStake = v => Number.isInteger(v) ? `$${v}` : `$${v.toFixed(2)}`;
-  const playerTeamPayout = {};
-  const teamStakeByPid = {};
-  let teamPayoutHtml = '';
-  let twoTeamGame = false;
-
-  if (isTeamGame && teams && teams.length > 0) {
-    const teamSizes   = teams.map(t => t.playerIds.length);
-    const largestSz   = Math.max(...teamSizes);
-    const numTeams    = teams.length;
-    // Head-to-head (exactly 2 teams): only the Total variance decides the
-    // winner — Front/Back are not scored separately, and the whole pot
-    // rides on Total. With 3+ teams, the pot splits into three segments
-    // (Front $5, Back $5, Total $10 per player) so each nine — and the
-    // overall round — has its own winner. Either way the full team stake
-    // is $20/player on the largest team.
-    twoTeamGame = numTeams === 2;
-    const frontStake  = twoTeamGame ? 0 : largestSz * 5;
-    const backStake   = twoTeamGame ? 0 : largestSz * 5;
-    const totalStake  = twoTeamGame ? largestSz * 20 : largestSz * 10;
-    const fullStake   = frontStake + backStake + totalStake; // always $20/player on the largest team
-
-    const teamPlayerCosts = teams.map(t => {
-      const sz        = t.playerIds.length;
-      const teamFull  = fullStake;
-      const perPlayer = teamFull / sz;
-      const standard  = fullStake / largestSz;
-      const extra     = perPlayer - standard;
-      return {
-        teamId: t.id,
-        name: t.name,
-        sz,
-        perPlayer: Math.round(perPlayer * 100) / 100,
-        extra: Math.round(extra * 100) / 100,
-        members: t.playerIds.map(pid => players.find(p=>p.id===pid)?.name.split(' ')[0]).join(' & ')
-      };
-    });
-    teams.forEach(t => {
-      const cost = teamPlayerCosts.find(tc => tc.teamId === t.id);
-      t.playerIds.forEach(pid => { teamStakeByPid[pid] = cost.perPlayer; });
-    });
-
-    // Segment deltas per team (for determining winner)
-    // For unequal teams, compare AVERAGE delta per player so size doesn't advantage either team
-    const teamsWithSegments = teams.map(t => {
-      const sz = t.playerIds.length;
-      const frontRaw = t.playerIds.reduce((s, pid) => {
-        const p = players.find(x => x.id === pid);
-        const frontQ = p?.quota != null ? Math.floor(p.quota / 2) : 0;
-        return s + ((parseInt(scores[pid]?.front) || 0) - frontQ);
-      }, 0);
-      const backRaw = hasFrontBack ? t.playerIds.reduce((s, pid) => {
-        const p = players.find(x => x.id === pid);
-        const backQ = p?.quota != null ? Math.ceil(p.quota / 2) : 0;
-        return s + ((parseInt(scores[pid]?.back) || 0) - backQ);
-      }, 0) : null;
-      const totalRaw = t.playerIds.reduce((s, pid) => {
-        const p = players.find(x => x.id === pid);
-        return s + (ptsOf(pid) - (p?.quota || 0));
-      }, 0);
-      const frontDelta = frontRaw / sz;
-      const backDelta  = backRaw !== null ? backRaw / sz : null;
-      const totalDelta = totalRaw / sz;
-      const cost = teamPlayerCosts.find(tc => tc.teamId === t.id);
-      const combinedPts = teamPtsOf(t);
-      return { ...t, frontDelta, backDelta, totalDelta,
-        frontRaw, backRaw, totalRaw, combinedPts,
-        members: cost.members, perPlayer: cost.perPlayer, extra: cost.extra, sz };
-    });
-
-    // Segment winner: pot = full contribution from every team (stake ×
-    // numTeams), so the winner collects the whole pot — their own stake
-    // plus everyone else's. This is a TOTAL payout, not net winnings, so
-    // total paid out always equals total paid in (aside from whole-dollar
-    // rounding on splits/ties).
-    const segmentWinner = (key, pot) => {
-      const sorted  = [...teamsWithSegments].sort((a,b) => b[key] - a[key]);
-      const top     = sorted[0][key];
-      const winners = sorted.filter(t => t[key] === top);
-      const tie     = winners.length > 1;
-      const prize   = tie ? Math.round(pot / winners.length) : pot;
-      return { winners, tie, pot, prize, key };
-    };
-
-    // Head-to-head games skip Front/Back entirely — only Total is scored.
-    const frontW = twoTeamGame ? null : segmentWinner('frontDelta', frontStake * numTeams);
-    const backW  = (!twoTeamGame && hasFrontBack) ? segmentWinner('backDelta', backStake * numTeams) : null;
-    const totW   = segmentWinner('totalDelta', totalStake * numTeams);
-
-    // Give each player on a winning team their equal share of whatever
-    // that team won across the front/back/total segments.
-    [frontW, backW, totW].forEach(result => {
-      if (!result) return;
-      result.winners.forEach(t => {
-        const share = result.prize / t.playerIds.length;
-        t.playerIds.forEach(pid => {
-          playerTeamPayout[pid] = (playerTeamPayout[pid] || 0) + share;
-        });
-      });
-    });
-
-    const fmtDelta = v => `${v >= 0 ? '+' : ''}${Math.round(v * 100) / 100}`;
-    const segRow = (label, result) => {
-      if (!result) return '';
-      const key = result.key;
-      const sorted = [...teamsWithSegments].sort((a, b) => b[key] - a[key]);
-      const topVal = sorted[0][key];
-      const runnerUp = sorted.find(t => t[key] !== topVal);
-      const marginStr = runnerUp
-        ? `<div style="font-size:9px;color:#8FBFAA;font-weight:400;margin-top:2px;">won by ${fmtDelta(topVal - runnerUp[key])}/player</div>`
-        : '';
-      const teamLines = sorted.map(t => {
-        const isWin = t[key] === topVal;
-        return `<div style="${isWin ? 'font-weight:700;color:var(--gold-light);' : 'color:#8FBFAA;'}">${isWin ? '🏆 ' : '　'}${t.name} (${t.members}): ${fmtDelta(t[key])}/player</div>`;
-      }).join('');
-      const prize = result.tie ? `${fmtMoney(result.prize)} each (tie)` : fmtMoney(result.prize);
-      return `<tr>
-        <td style="vertical-align:top;">${label}${marginStr}</td>
-        <td style="font-size:11px;text-align:left">${teamLines}</td>
-        <td style="color:var(--gold-light);font-weight:700;vertical-align:top;">${prize}</td>
-      </tr>`;
-    };
-
-    const costRows = teamPlayerCosts.map(tc => {
-      const extraStr  = tc.extra > 0 ? ` <span style="color:#f08080;font-size:10px">(+${fmtStake(tc.extra)} top-up)</span>` : '';
-      const totalOwed = tc.perPlayer + 10;
-      return `<tr>
-        <td style="font-size:11px">${tc.name} — ${tc.members}<br><span style="color:#8FBFAA">${tc.sz} players</span></td>
-        <td style="font-size:11px;color:#8FBFAA">${fmtStake(tc.perPlayer)} team${extraStr}<br>+ $10 indy = <strong style="color:#fff">${fmtStake(totalOwed)}</strong>/player</td>
-      </tr>`;
-    }).join('');
-
-    teamPayoutHtml = `
-      <div style="margin:14px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">💰 Team Payouts</div>
-      <div class="result-table-wrap"><table class="result-table">
-        <tbody>
-          ${segRow('Front 9', frontW)}
-          ${segRow('Back 9', backW)}
-          ${segRow(twoTeamGame ? 'Team Pot' : 'Total', totW)}
-        </tbody>
-      </table></div>
-      <div style="margin:8px 0 4px;font-size:10px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">Player Stakes</div>
-      <div class="result-table-wrap"><table class="result-table">
-        <tbody>${costRows}</tbody>
-      </table></div>`;
-
-    // ── Ranked "Team Result" table, by Total variance ──
-    const rankedTeams = [...teamsWithSegments].sort((a, b) => b.totalDelta - a.totalDelta);
-    const topTotal = rankedTeams[0].totalDelta;
-    const totalTieTeams = rankedTeams.filter(t => t.totalDelta === topTotal);
-    const totalTie = totalTieTeams.length > 1;
-
-    const teamRows = rankedTeams.map((t, i) => {
-      const isTied  = t.totalDelta === topTotal;
-      const medal   = totalTie && isTied ? '🤝' : i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`;
-      const dColor  = t.totalDelta > 0 ? '#6fcf97' : t.totalDelta < 0 ? '#f08080' : '#8FBFAA';
-      const avgStr  = `${t.totalDelta >= 0 ? '+' : ''}${(Math.round(t.totalDelta * 10) / 10)}`;
-      const rawStr  = `${t.totalRaw >= 0 ? '+' : ''}${t.totalRaw}`;
-      return `<tr>
-        <td>${medal} ${t.name}</td>
-        <td style="color:#8FBFAA;font-size:11px">${t.members}</td>
-        <td>${t.combinedPts} pts</td>
-        <td style="color:${dColor};font-weight:700">${avgStr} avg<br><span style="font-size:10px;font-weight:400">${rawStr} total</span></td>
-      </tr>`;
-    }).join('');
-
-    const blindNote = blindDraw
-      ? `<div style="margin-bottom:8px;font-size:12px;color:#8FBFAA;">🎲 Blind draw teams revealed!</div>` : '';
-    teamSection = `
-      <div style="margin:14px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">⛳ Team Result</div>
-      ${blindNote}
-      <div class="result-table-wrap"><table class="result-table"><tbody>${teamRows}</tbody></table></div>
-      <div style="margin:10px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">🏌️ Individual Result</div>`;
-  }
-
-  // ── Individual result rows — sorted by delta ──
-  const indivRows = withDelta.map((r, i) => {
-    const isTied  = r.delta === topIndivDelta;
-    const medal   = indivTie && isTied ? '🤝' : i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`;
-    const dColor  = r.delta > 0 ? 'var(--gold-light)' : r.delta < 0 ? '#f08080' : '#8FBFAA';
-    const dStr    = `${r.delta >= 0 ? '+' : ''}${r.delta}`;
-    const qArrow  = r.quotaChange > 0 ? '▲' : r.quotaChange < 0 ? '▼' : '—';
-    const qColor  = r.quotaChange > 0 ? '#6fcf97' : r.quotaChange < 0 ? '#f08080' : '#8FBFAA';
-    const qStr    = `<span style="color:${qColor};font-size:11px"> · Q ${r.quota} ${qArrow} ${r.newQuota}</span>`;
-    return `<tr>
-      <td>${medal} ${r.name}</td>
-      <td>${r.pts} pts <span style="color:${dColor};font-weight:700">${dStr}</span>${qStr}</td>
-    </tr>`;
-  }).join('');
-
-  // ── Payout tables ──
-  const INDIV_PAYOUTS = {
-     5: [40,10], 6: [40,20], 7: [50,20], 8: [50,20,10], 9: [60,20,10],
-    10: [60,30,10], 11: [70,30,10], 12: [70,30,20,10], 13: [70,30,20,10],
-    14: [70,40,20,10], 15: [70,50,20,10], 16: [70,50,30,10], 17: [80,50,20,10],
-    18: [90,50,30,10], 19: [100,50,30,10], 20: [100,60,30,10], 21: [100,60,30,20],
-    22: [110,60,30,20], 23: [120,60,30,20], 24: [130,60,30,20],
-  };
-
-  function getIndivPayouts(n) {
-    const totalPot = n * 10; // $10/player buy-in — the payouts must sum to exactly this
-    let shape;
-    if (INDIV_PAYOUTS[n]) {
-      shape = INDIV_PAYOUTS[n];
-    } else {
-      const nearestN = n < 5 ? 5 : 24;
-      const ratio = totalPot / (nearestN * 10);
-      shape = INDIV_PAYOUTS[nearestN].map(v => Math.round(v * ratio));
-    }
-    const used = shape.slice(0, Math.max(1, Math.min(shape.length, n)));
-    const sum = used.reduce((a, b) => a + b, 0);
-    used[0] += (totalPot - sum);
-    return used;
-  }
-
-  const numPlayers  = players.length;
-  const indivPayout = getIndivPayouts(numPlayers);
-
-  const indivPayoutRows = (() => {
-    const rows = [];
-    let i = 0;
-    while (i < withDelta.length) {
-      const delta = withDelta[i].delta;
-      const tied  = withDelta.slice(i).filter(r => r.delta === delta);
-      const positions = tied.map((_, j) => i + j);
-      const totalPrize = positions.reduce((s, pos) => s + (indivPayout[pos] || 0), 0);
-      const eachGets   = tied.length > 1 ? Math.round(totalPrize / tied.length) : totalPrize;
-      tied.forEach(r => {
-        if (eachGets > 0) rows.push({ id: r.id, name: r.name, delta: r.delta, prize: eachGets, tied: tied.length > 1 });
-      });
-      i += tied.length;
-    }
-    return rows;
-  })();
-
-  const indivPayoutHtml = (() => {
-    const rows = indivPayoutRows.map(r => {
-      const dColor = r.delta > 0 ? '#6fcf97' : r.delta < 0 ? '#f08080' : '#8FBFAA';
-      return `<tr>
-        <td>${r.name}</td>
-        <td style="color:${dColor}">${r.delta >= 0 ? '+' : ''}${r.delta} vs Q</td>
-        <td style="color:var(--gold-light);font-weight:700">$${r.prize}${r.tied?' (split)':''}</td>
-      </tr>`;
-    }).join('');
-    return rows ? `
-      <div style="margin:14px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">💰 Individual Payouts</div>
-      <div class="result-table-wrap"><table class="result-table"><tbody>${rows}</tbody></table></div>` : '';
-  })();
-
-  const payoutRecapHtml = (() => {
-    const indivByPid = {};
-    indivPayoutRows.forEach(r => { indivByPid[r.id] = r.prize; });
-
-    const anyTeamPayout = Object.keys(playerTeamPayout).length > 0;
-    const anyIndivPayout = indivPayoutRows.length > 0;
-    if (!anyTeamPayout && !anyIndivPayout) return '';
-
-    const recap = withDelta.map(r => {
-      const team  = playerTeamPayout[r.id] || 0;
-      const indiv = indivByPid[r.id] || 0;
-      return { name: r.name, team, indiv, total: team + indiv };
-    }).sort((a, b) => b.total - a.total);
-
-    const rows = recap.map(r => `<tr>
-      <td>${r.name}</td>
-      ${isTeamGame ? `<td style="color:#8FBFAA">${fmtMoney(r.team)}</td>` : ''}
-      <td style="color:#8FBFAA">${fmtMoney(r.indiv)}</td>
-      <td style="color:var(--gold-light);font-weight:700">${fmtMoney(r.total)}</td>
-    </tr>`).join('');
-
-    return `
-      <div style="margin:14px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">🧾 Payout Recap</div>
-      <div class="result-table-wrap"><table class="result-table">
-        <thead><tr>
-          <td style="font-size:10px;color:#8FBFAA;">Player</td>
-          ${isTeamGame ? `<td style="font-size:10px;color:#8FBFAA;">Team</td>` : ''}
-          <td style="font-size:10px;color:#8FBFAA;">Indy</td>
-          <td style="font-size:10px;color:#8FBFAA;">Total</td>
-        </tr></thead>
-        <tbody>${rows}</tbody>
-      </table></div>`;
-  })();
-
-  const indivWinStr = indivTie
-    ? `🤝 Individual tie — ${indivWinners.map(r => r.name.split(' ')[0]).join(' & ')}`
-    : `${withDelta[0].name} wins individually!`;
-
-  const html = `
-    ${teamSection}
-    ${teamPayoutHtml}
-    ${!isTeamGame ? `<div style="margin:14px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">🏌️ Individual Result</div>` : ''}
-    <div style="margin-bottom:8px;font-size:14px;color:var(--gold-light);font-weight:700;">${indivWinStr}</div>
-    <div class="result-table-wrap"><table class="result-table"><tbody>${indivRows}</tbody></table></div>
-    ${indivPayoutHtml}
-    ${payoutRecapHtml}`;
-
-  return { html, playerTeamPayout, indivPayoutRows, teamStakeByPid };
-}
-
 function finishRound() {
-  if (state.finished) return; // already recorded — ignore repeat clicks
-  state.finished = true;
-  document.getElementById('finish-round-btn').style.display = 'none';
-
   const { players, quotaGame } = state;
   const ranked = players.map(p => ({ ...p, pts: totalPoints(p.id) }))
     .sort((a,b) => b.pts - a.pts);
@@ -2366,66 +1576,309 @@ function finishRound() {
     date:     state.date,
     holes:    state.numHoles,
     quotaGame,
-    isTeamGame: !!state.isTeamGame,
-    teams:    state.isTeamGame && state.teams ? state.teams.map(t => ({ id: t.id, name: t.name, playerIds: t.playerIds })) : null,
-    rulesForDay: state.rulesForDay || null,
     players:  ranked.map(r => ({
       id:r.id, name:r.name, points:r.pts, tee:r.tee, defaultTee:r.defaultTee, teeAdj:r.teeAdj||0,
       front: parseInt(state.scores[r.id].front) || 0,
       back:  state.scores[r.id].back !== null ? (parseInt(state.scores[r.id].back) || 0) : null,
-      quota:r.quota, newQuota:r.newQuota, quotaChange:r.quotaChange,
-      teamPaid: 0, teamWon: 0, indyPaid: 10, indyWon: 0 // indy buy-in always applies; team stake/winnings filled in below
+      quota:r.quota, newQuota:r.newQuota, quotaChange:r.quotaChange
     }))
   };
-  // Quick lookup so the payout math further down can fill in each
-  // player's actual paid/won amounts before the entry is saved.
-  const entryPlayerById = {};
-  entry.players.forEach(ep => { entryPlayerById[ep.id] = ep; });
   const history = loadHistory();
   history.push(entry);
-  // saveHistory() is called at the end of this function, once paid/won
-  // have been filled in — see below.
+  saveHistory(history);
 
   const banner = document.getElementById('result-banner');
   banner.style.display = 'block';
 
-  const result = buildResultsHtml({
-    players: state.players,
-    teams: state.teams,
-    isTeamGame: state.isTeamGame,
-    hasFrontBack: state.hasFrontBack,
-    scores: state.scores,
-    ranked,
-    blindDraw: state.blindDraw
-  });
+  // ── Individual winner: highest delta (pts - quota) ──
+  const withDelta = ranked.map(r => ({ ...r, delta: r.pts - r.quota }))
+    .sort((a, b) => b.delta - a.delta);
+  const topIndivDelta = withDelta[0].delta;
+  const indivWinners  = withDelta.filter(r => r.delta === topIndivDelta);
+  const indivTie      = indivWinners.length > 1;
 
-  // Fill in each player's actual paid/won amounts, then save the
-  // completed history entry (for the Net Results tab).
-  Object.keys(result.teamStakeByPid).forEach(pid => {
-    if (entryPlayerById[pid]) entryPlayerById[pid].teamPaid = result.teamStakeByPid[pid];
-  });
-  Object.keys(result.playerTeamPayout).forEach(pid => {
-    if (entryPlayerById[pid]) entryPlayerById[pid].teamWon = result.playerTeamPayout[pid];
-  });
-  result.indivPayoutRows.forEach(r => {
-    if (entryPlayerById[r.id]) entryPlayerById[r.id].indyWon = r.prize;
-  });
-  entry.players.forEach(ep => {
-    ep.teamPaid = Math.round(ep.teamPaid * 100) / 100;
-    ep.teamWon  = Math.round(ep.teamWon);
-    ep.indyPaid = Math.round(ep.indyPaid * 100) / 100;
-    ep.indyWon  = Math.round(ep.indyWon);
-  });
-  saveHistory(history);
+  // ── Team winner: highest average delta per player ──
+  let teamSection = '';
+  let teamWinnerLabel = '';
+  if (state.isTeamGame && state.teams && state.teams.length > 0) {
+    const teamsWithDelta = state.teams.map(t => {
+      const sz = t.playerIds.length;
+      const rawDelta = t.playerIds.reduce((sum, pid) => {
+        const p = state.players.find(x => x.id === pid);
+        return sum + (totalPoints(pid) - (p?.quota || 0));
+      }, 0);
+      const combinedDelta = rawDelta / sz; // average per player
+      const combinedPts = teamTotal(t);
+      const members = t.playerIds.map(pid => state.players.find(p => p.id === pid)?.name.split(' ')[0]).join(' & ');
+      return { ...t, combinedDelta, rawDelta, sz, combinedPts, members };
+    }).sort((a, b) => b.combinedDelta - a.combinedDelta);
+
+    const topDelta   = teamsWithDelta[0].combinedDelta;
+    const teamWinners = teamsWithDelta.filter(t => t.combinedDelta === topDelta);
+    const teamTie     = teamWinners.length > 1;
+
+    const teamWinStr = teamTie
+      ? `🤝 Tie — ${teamWinners.map(t => t.name).join(' & ')} split the pot!`
+      : `${teamsWithDelta[0].name} wins!`;
+    teamWinnerLabel = teamTie
+      ? teamWinners.map(t => t.name).join(' & ')
+      : teamsWithDelta[0].name;
+
+    const teamRows = teamsWithDelta.map((t, i) => {
+      const isTied  = t.combinedDelta === topDelta;
+      const medal   = teamTie && isTied ? '🤝' : i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`;
+      const dColor  = t.combinedDelta > 0 ? '#6fcf97' : t.combinedDelta < 0 ? '#f08080' : '#8FBFAA';
+      const avgStr  = `${t.combinedDelta >= 0 ? '+' : ''}${(Math.round(t.combinedDelta * 10) / 10)}`;
+      const rawStr  = `${t.rawDelta >= 0 ? '+' : ''}${t.rawDelta}`;
+      return `<tr>
+        <td>${medal} ${t.name}</td>
+        <td style="color:var(--ink-soft);font-size:11px">${t.members}</td>
+        <td>${t.combinedPts} pts</td>
+        <td style="color:${dColor};font-weight:700">${avgStr} avg<br><span style="font-size:10px;font-weight:400">${rawStr} total</span></td>
+      </tr>`;
+    }).join('');
+
+    const blindNote = state.blindDraw
+      ? `<div style="margin-bottom:8px;font-size:12px;color:#8FBFAA;">🎲 Blind draw teams revealed!</div>` : '';
+    teamSection = `
+      <div style="margin:14px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">⛳ Team Result</div>
+      ${blindNote}
+      <div style="font-size:18px;font-weight:800;color:var(--gold-light);margin-bottom:10px;">${teamWinStr}</div>
+      <table class="result-table" style="margin-bottom:10px;"><tbody>${teamRows}</tbody></table>
+      <div style="margin:10px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">🏌️ Individual Result</div>`;
+  }
+
+  // ── Individual result rows — sorted by delta ──
+  const indivRows = withDelta.map((r, i) => {
+    const isTied  = r.delta === topIndivDelta;
+    const medal   = indivTie && isTied ? '🤝' : i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`;
+    const dColor  = r.delta > 0 ? 'var(--gold-light)' : r.delta < 0 ? '#f08080' : '#8FBFAA';
+    const dStr    = `${r.delta >= 0 ? '+' : ''}${r.delta}`;
+    const qArrow  = r.quotaChange > 0 ? '▲' : r.quotaChange < 0 ? '▼' : '—';
+    const qColor  = r.quotaChange > 0 ? '#6fcf97' : r.quotaChange < 0 ? '#f08080' : '#8FBFAA';
+    const qStr    = `<span style="color:${qColor};font-size:11px"> · Q ${r.quota} ${qArrow} ${r.newQuota}</span>`;
+    let teamLabel = '';
+    if (state.isTeamGame && state.teams) {
+      const myTeam = state.teams.find(t => t.playerIds.includes(r.id));
+      if (myTeam) teamLabel = `<span style="color:#8FBFAA;font-size:11px"> · ${myTeam.name}</span>`;
+    }
+    return `<tr>
+      <td>${medal} ${r.name}${teamLabel}</td>
+      <td>${r.pts} pts <span style="color:${dColor};font-weight:700">${dStr}</span>${qStr}</td>
+    </tr>`;
+  }).join('');
+
+  // ── Payout tables ──
+  // Individual payouts by player count [1st, 2nd, 3rd, 4th]
+  const INDIV_PAYOUTS = {
+     5: [40,10],
+     6: [40,20],
+     7: [50,20],
+     8: [50,20,10],
+     9: [60,20,10],
+    10: [60,30,10],
+    11: [70,30,10],
+    12: [70,30,20,10],
+    13: [70,30,20,10],
+    14: [70,40,20,10],
+    15: [70,50,20,10],
+    16: [70,50,30,10],
+    17: [80,50,20,10],
+    18: [90,50,30,10],
+    19: [100,50,30,10],
+    20: [100,60,30,10],
+    21: [100,60,30,20],
+    22: [110,60,30,20],
+    23: [120,60,30,20],
+    24: [130,60,30,20],
+  };
+
+  function getIndivPayouts(n) {
+    if (INDIV_PAYOUTS[n]) return INDIV_PAYOUTS[n];
+    // Beyond 24: extrapolate — 1st grows by ~10 per 4 players, others scale similarly
+    const base = INDIV_PAYOUTS[24];
+    const extra = Math.floor((n - 24) / 4);
+    return [base[0] + extra*10, base[1], base[2] + (extra>1?10:0), base[3]];
+  }
+
+  const numPlayers  = state.players.length;
+  const indivPayout = getIndivPayouts(numPlayers);
+
+  // Individual payouts — assign by finishing position (delta rank), ties split
+  const indivPayoutRows = (() => {
+    const rows = [];
+    let i = 0;
+    while (i < withDelta.length) {
+      // Find all tied at this position
+      const delta = withDelta[i].delta;
+      const tied  = withDelta.slice(i).filter(r => r.delta === delta);
+      // Sum up prize money for these positions
+      const positions = tied.map((_, j) => i + j);
+      const totalPrize = positions.reduce((s, pos) => s + (indivPayout[pos] || 0), 0);
+      const eachGets   = tied.length > 1 ? Math.round(totalPrize / tied.length) : totalPrize;
+      tied.forEach(r => {
+        if (eachGets > 0) rows.push({ name: r.name, delta: r.delta, prize: eachGets, tied: tied.length > 1 });
+      });
+      i += tied.length;
+    }
+    return rows;
+  })();
+
+  // ── Team payouts ──
+  // All teams contribute as if they have the same size as the LARGEST team.
+  // Smaller teams top up per-player: extra = (largestSz - teamSz) * $20 / teamSz
+  // Segments: front=$5/player, back=$5/player, total=$10/player (largest team basis)
+  // Winning team always collects largest-team stake × number of losing teams.
+  let teamPayoutHtml = '';
+  if (state.isTeamGame && state.teams && state.teams.length > 0) {
+    const teamSizes   = state.teams.map(t => t.playerIds.length);
+    const largestSz   = Math.max(...teamSizes);
+    // Full stake per team per segment (based on largest team)
+    const frontStake  = largestSz * 5;   // e.g. 4 players × $5 = $20
+    const backStake   = largestSz * 5;
+    const totalStake  = largestSz * 10;
+    const fullStake   = frontStake + backStake + totalStake; // $20+$20+$40 = $80
+
+    // Per-player costs for each team
+    const teamPlayerCosts = state.teams.map(t => {
+      const sz        = t.playerIds.length;
+      const teamFull  = fullStake; // each team puts in the same total
+      const perPlayer = teamFull / sz;
+      const standard  = fullStake / largestSz; // what largest-team player pays
+      const extra     = perPlayer - standard;
+      return {
+        teamId: t.id,
+        name: t.name,
+        sz,
+        perPlayer: Math.round(perPlayer * 100) / 100,
+        extra: Math.round(extra * 100) / 100,
+        members: t.playerIds.map(pid => state.players.find(p=>p.id===pid)?.name.split(' ')[0]).join(' & ')
+      };
+    });
+
+    // Segment deltas per team (for determining winner)
+    // For unequal teams, compare AVERAGE delta per player so size doesn't advantage either team
+    const teamsWithSegments = state.teams.map(t => {
+      const sz = t.playerIds.length;
+      // Front quota = floor(quota/2), Back quota = ceil(quota/2)
+      // Team quota = sum of all players' front/back quotas
+      const frontRaw = t.playerIds.reduce((s, pid) => {
+        const p = state.players.find(x => x.id === pid);
+        const frontQ = p?.quota != null ? Math.floor(p.quota / 2) : 0;
+        return s + ((parseInt(state.scores[pid]?.front) || 0) - frontQ);
+      }, 0);
+      const backRaw = state.hasFrontBack ? t.playerIds.reduce((s, pid) => {
+        const p = state.players.find(x => x.id === pid);
+        const backQ = p?.quota != null ? Math.ceil(p.quota / 2) : 0;
+        return s + ((parseInt(state.scores[pid]?.back) || 0) - backQ);
+      }, 0) : null;
+      const totalRaw = t.playerIds.reduce((s, pid) => {
+        const p = state.players.find(x => x.id === pid);
+        return s + (totalPoints(pid) - (p?.quota || 0));
+      }, 0);
+      // Average per player (used for winner determination when teams are unequal)
+      const frontDelta = frontRaw / sz;
+      const backDelta  = backRaw !== null ? backRaw / sz : null;
+      const totalDelta = totalRaw / sz;
+      const cost = teamPlayerCosts.find(tc => tc.teamId === t.id);
+      return { ...t, frontDelta, backDelta, totalDelta,
+        frontRaw, backRaw, totalRaw,
+        members: cost.members, perPlayer: cost.perPlayer, extra: cost.extra, sz };
+    });
+
+    const numTeams = teamsWithSegments.length;
+
+    // Segment winner: pot = frontStake × (numTeams - 1) etc.
+    const segmentWinner = (key, pot) => {
+      const sorted  = [...teamsWithSegments].sort((a,b) => b[key] - a[key]);
+      const top     = sorted[0][key];
+      const winners = sorted.filter(t => t[key] === top);
+      const tie     = winners.length > 1;
+      const prize   = tie ? Math.round(pot / winners.length) : pot;
+      return { winners, tie, pot, prize, key };
+    };
+
+    const frontW = segmentWinner('frontDelta', frontStake * (numTeams - 1));
+    const backW  = state.hasFrontBack ? segmentWinner('backDelta', backStake * (numTeams - 1)) : null;
+    const totW   = segmentWinner('totalDelta', totalStake * (numTeams - 1));
+
+    const fmtMoney = v => `$${Number.isInteger(v) ? v : v.toFixed(2)}`;
+
+    const fmtDelta = v => `${v >= 0 ? '+' : ''}${Math.round(v * 100) / 100}`;
+    const segRow = (label, result) => {
+      if (!result) return '';
+      const winNames = result.winners.map(t =>
+        `${t.name} (${t.members}) avg ${fmtDelta(result.key === 'frontDelta' ? t.frontDelta : result.key === 'backDelta' ? t.backDelta : t.totalDelta)}/player`
+      ).join(' / ');
+      const prize = result.tie ? `${fmtMoney(result.prize)} each (tie)` : fmtMoney(result.prize);
+      return `<tr>
+        <td>${label}</td>
+        <td style="font-size:11px">${winNames}</td>
+        <td style="color:var(--gold-light);font-weight:700">${prize}</td>
+      </tr>`;
+    };
+
+    // Player cost breakdown
+    const costRows = teamPlayerCosts.map(tc => {
+      const extraStr = tc.extra > 0 ? ` <span style="color:#f08080;font-size:10px">(+${fmtMoney(tc.extra)} top-up)</span>` : '';
+      return `<tr>
+        <td style="font-size:11px">${tc.name} — ${tc.members}</td>
+        <td style="font-size:11px;color:var(--ink-soft)">${tc.sz} players</td>
+        <td style="font-size:11px;color:#8FBFAA">${fmtMoney(tc.perPlayer)}/player${extraStr}</td>
+      </tr>`;
+    }).join('');
+
+    teamPayoutHtml = `
+      <div style="margin:14px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">💰 Team Payouts</div>
+      <table class="result-table" style="margin-bottom:6px;">
+        <tbody>
+          ${segRow('Front 9', frontW)}
+          ${segRow('Back 9', backW)}
+          ${segRow('Total', totW)}
+        </tbody>
+      </table>
+      <div style="margin:8px 0 4px;font-size:10px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">Player Stakes</div>
+      <table class="result-table" style="margin-bottom:10px;">
+        <tbody>${costRows}</tbody>
+      </table>`;
+  }
+
+  // Individual payout HTML
+  const indivPayoutHtml = (() => {
+    const rows = indivPayoutRows.map(r => {
+      const dColor = r.delta > 0 ? '#6fcf97' : r.delta < 0 ? '#f08080' : '#8FBFAA';
+      return `<tr>
+        <td>${r.name}</td>
+        <td style="color:${dColor}">${r.delta >= 0 ? '+' : ''}${r.delta} vs Q</td>
+        <td style="color:var(--gold-light);font-weight:700">$${r.prize}${r.tied?' (split)':''}</td>
+      </tr>`;
+    }).join('');
+    return rows ? `
+      <div style="margin:14px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">💰 Individual Payouts</div>
+      <table class="result-table" style="margin-bottom:10px;"><tbody>${rows}</tbody></table>` : '';
+  })();
+
+  // ── Winner headline ──
+  const indivWinStr = indivTie
+    ? `🤝 Individual tie — ${indivWinners.map(r => r.name.split(' ')[0]).join(' & ')}`
+    : `${withDelta[0].name} wins individually!`;
+  const headlineWinner = state.isTeamGame && state.teams?.length > 0
+    ? teamWinnerLabel
+    : withDelta[0].name;
 
   banner.innerHTML = `
     <div class="result-crown">⛳</div>
-    <div class="result-winner">RESULTS</div>
+    <div class="result-winner">${headlineWinner} wins!</div>
     <div class="result-score">${state.date}</div>
-    ${result.html}
+    ${teamSection}
+    ${teamPayoutHtml}
+    ${!state.isTeamGame ? `<div style="margin:14px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">🏌️ Individual Result</div>` : ''}
+    <div style="margin-bottom:8px;font-size:14px;color:var(--gold-light);font-weight:700;">${indivWinStr}</div>
+    <table class="result-table"><tbody>${indivRows}</tbody></table>
+    ${indivPayoutHtml}
     <div style="margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
       <button class="btn btn-outline btn-sm" onclick="showScreen('profiles')" style="color:#fff;border-color:rgba(255,255,255,0.3)">View Profiles</button>
-      <button class="btn btn-outline btn-sm" onclick="newRound()" style="color:#fff;border-color:rgba(255,255,255,0.3)">New Game</button>
+      <button class="btn btn-outline btn-sm" onclick="newRound()" style="color:#fff;border-color:rgba(255,255,255,0.3)">New Round</button>
     </div>`;
 
   banner.scrollIntoView({ behavior: 'smooth' });
@@ -2449,6 +1902,89 @@ function newRound() {
   showScreen('setup');
 }
 
+// ══════════════════════════════════════
+// ONE-TIME ROSTER IMPORT (2026-09-20)
+// Wipes all existing players and loads the roster below.
+// Round history is left untouched. Runs once per browser
+// (guarded by IMPORT_FLAG) then never runs again.
+// ══════════════════════════════════════
+const IMPORT_FLAG = 'stableford_import_2026_09_20_v2';
+const IMPORT_ROSTER = [
+  { name: 'Albe Evans', quota: 37, tee: 'Gold', phone: '(570) 926-0926' },
+  { name: 'Alex Anderson', quota: 45, tee: 'Gold', phone: '(570) 814-5363' },
+  { name: 'Allen Morrow', quota: 22, tee: 'Green', phone: '(570) 240-1660' },
+  { name: 'Andrew Maddock', quota: 34, tee: 'Gold', phone: '(570) 878-4425' },
+  { name: 'Brett Slocum', quota: 32, tee: 'White', phone: '(570) 574-4454' },
+  { name: 'Bob Gill', quota: 33, tee: 'Green', phone: '(570) 574-2556' },
+  { name: 'Brendan Scanlan', quota: 32, tee: 'Gold', phone: '(570) 575-8778' },
+  { name: 'Brian Corbett', quota: 28, tee: 'Green', phone: '(570) 262-9453' },
+  { name: 'Chad Dedona', quota: 30, tee: 'Gold', phone: '(570) 498-9027' },
+  { name: 'Chase Makowski', quota: 27, tee: 'Gold', phone: '(570) 704-7936' },
+  { name: 'Chris Sheehan', quota: 35, tee: 'Gold', phone: '(412) 969-8874' },
+  { name: 'Chuckie Brandt', quota: 31, tee: 'White', phone: '(570) 406-5129' },
+  { name: 'Clem Gover', quota: 24, tee: 'Green', phone: '(570) 690-3107' },
+  { name: 'David Kluger', quota: 29, tee: 'White', phone: '(570) 881-9846' },
+  { name: 'Dom Castriganano', quota: 33, tee: 'Gold', phone: '(570) 466-8795' },
+  { name: 'Earl Thompson', quota: 32, tee: 'Gold', phone: '(570) 417-2422' },
+  { name: 'Frank Pinnacoli', quota: 31, tee: 'Gold', phone: '(570) 574-6888' },
+  { name: 'Charlie Gelso', quota: 28, tee: 'White', phone: '(570) 574-7166' },
+  { name: 'Greg Mascioli', quota: 28, tee: 'Gold', phone: '(570) 690-0245' },
+  { name: 'Jack Oliver', quota: 35, tee: 'Gold', phone: '(570) 706-6487' },
+  { name: 'Jason Barkley', quota: 34, tee: 'Gold', phone: '(610) 721-6928' },
+  { name: 'Jim Hoover', quota: 31, tee: 'Green', phone: '(570) 760-7967' },
+  { name: 'Jimmy Tressler Jr', quota: 35, tee: 'Gold', phone: '(570) 851-7171' },
+  { name: 'Jim Fronzoni', quota: 29, tee: 'White', phone: '(570) 650-0987' },
+  { name: 'Joe Collini', quota: 31, tee: 'Gold', phone: '(570) 760-8469' },
+  { name: 'Joe Bevevino', quota: 38, tee: 'Gold', phone: '(570) 762-6735' },
+  { name: 'Joey Ferretti', quota: 22, tee: 'Green', phone: '(570) 909-8233' },
+  { name: 'John Henry', quota: 30, tee: 'Gold', phone: '(570) 954-5221' },
+  { name: 'Jonathan Wilson', quota: 35, tee: 'Gold', phone: '(570) 540-3575' },
+  { name: 'Kenny Wallace', quota: 28, tee: 'Gold', phone: '' },
+  { name: 'Lance Sutter', quota: 17, tee: 'White', phone: '(570) 470-1596' },
+  { name: 'Liam Gill', quota: 34, tee: 'Gold', phone: '(570) 406-6137' },
+  { name: 'Logan Paczewski', quota: 42, tee: 'Gold', phone: '(570) 574-1124' },
+  { name: 'Marty Wilbur', quota: 26, tee: 'White', phone: '(570) 407-0370' },
+  { name: 'Matt Dolan', quota: 30, tee: 'Gold', phone: '(570) 814-7675' },
+  { name: 'Matt Tresssler', quota: 30, tee: 'Gold', phone: '(570) 507-1811' },
+  { name: 'Michael Luggiano', quota: 45, tee: 'Black', phone: '(570) 814-0250' },
+  { name: 'Michael Boland', quota: 32, tee: 'Gold', phone: '(570) 262-6896' },
+  { name: 'Michael Grimes', quota: 32, tee: 'Gold', phone: '(570) 814-3953' },
+  { name: 'Mike Kashnicki', quota: 37, tee: 'Gold', phone: '(570) 331-9215' },
+  { name: 'Mike Vassil', quota: 31, tee: 'Gold', phone: '(570) 575-0869' },
+  { name: 'Frank Nockley', quota: 30, tee: 'Gold', phone: '(570) 706-0399' },
+  { name: 'Paul Schaub', quota: 34, tee: 'Gold', phone: '(806) 438-4446' },
+  { name: 'Santo Lafoca', quota: 29, tee: 'Green', phone: '(570) 881-9997' },
+  { name: 'Scott Carney', quota: 29, tee: 'White', phone: '(215) 837-1139' },
+  { name: 'Steve Doziak', quota: 29, tee: 'Green', phone: '(570) 706-0369' },
+  { name: 'Tony Gallas', quota: 22, tee: 'White', phone: '(570) 479-4879' },
+  { name: 'Tim Rutkowski', quota: 32, tee: 'Gold', phone: '(570) 855-0447' },
+  { name: 'Todd Vonderheid', quota: 35, tee: 'Gold', phone: '(570) 760-4632' },
+  { name: 'Tony Bevevino', quota: 37, tee: 'Gold', phone: '(570) 762-6735' },
+  { name: 'Tyler McGarry', quota: 38, tee: 'Gold', phone: '(570) 362-1764' },
+];
+
+async function runOneTimeRosterImport() {
+  if (localStorage.getItem(IMPORT_FLAG)) return;
+
+  // Delete every existing profile (locally and in Supabase)
+  const oldProfiles = loadProfiles();
+  for (const p of oldProfiles) {
+    await sbDelete('profiles', p.id);
+  }
+
+  // Build fresh profiles from the roster and save (local + Supabase)
+  const newProfiles = IMPORT_ROSTER.map(r => ({
+    id: genId(), name: r.name, quota: r.quota, tee: r.tee, phone: r.phone || ''
+  }));
+  saveProfiles(newProfiles);
+
+  if (selectedProfileId && !newProfiles.some(p => p.id === selectedProfileId)) {
+    selectedProfileId = null;
+  }
+
+  localStorage.setItem(IMPORT_FLAG, '1');
+}
+
 // Init — render immediately from local cache, then sync from Supabase
 document.getElementById('round-date').value =
   new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
@@ -2456,8 +1992,9 @@ document.getElementById('round-date').value =
 renderProfiles();
 renderSetup();
 
-// Sync in background — updates UI when done
-syncFromSupabase().then(() => {
+// Sync in background, then run the one-time roster import, then re-render
+syncFromSupabase().then(async () => {
+  await runOneTimeRosterImport();
   renderProfiles();
   renderSetup();
 });

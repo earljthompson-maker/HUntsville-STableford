@@ -633,6 +633,80 @@ function mergeById(remote, local) {
 // copies that get dropped. Returns the collapsed list plus the ids
 // of the copies that were dropped, so callers can delete them
 // upstream (Supabase) and must never re-upload them afterward.
+// Known club roster as of the last full import — used only as a safety
+// net to restore any player whose profile has vanished from the shared
+// database. This does NOT overwrite anyone currently present (so it
+// won't undo legitimate quota changes from played rounds) — it only
+// re-creates a profile for a name that's missing entirely. A restored
+// player's quota/tee/phone reflect this original import, not whatever
+// they may have earned since (there's no way to recover that from here
+// if the row itself was deleted).
+const KNOWN_ROSTER = [
+  { name: 'Albe Evans', quota: 37, tee: 'Gold', phone: '(570) 926-0926' },
+  { name: 'Alex Anderson', quota: 45, tee: 'Gold', phone: '(570) 814-5363' },
+  { name: 'Allen Morrow', quota: 22, tee: 'Green', phone: '(570) 240-1660' },
+  { name: 'Andrew Maddock', quota: 34, tee: 'Gold', phone: '(570) 878-4425' },
+  { name: 'Brett Slocum', quota: 32, tee: 'White', phone: '(570) 574-4454' },
+  { name: 'Bob Gill', quota: 33, tee: 'Green', phone: '(570) 574-2556' },
+  { name: 'Brendan Scanlan', quota: 32, tee: 'Gold', phone: '(570) 575-8778' },
+  { name: 'Brian Corbett', quota: 28, tee: 'Green', phone: '(570) 262-9453' },
+  { name: 'Chad Dedona', quota: 30, tee: 'Gold', phone: '(570) 498-9027' },
+  { name: 'Chase Makowski', quota: 27, tee: 'Gold', phone: '(570) 704-7936' },
+  { name: 'Chris Sheehan', quota: 35, tee: 'Gold', phone: '(412) 969-8874' },
+  { name: 'Chuckie Brandt', quota: 31, tee: 'White', phone: '(570) 406-5129' },
+  { name: 'Clem Gover', quota: 24, tee: 'Green', phone: '(570) 690-3107' },
+  { name: 'David Kluger', quota: 29, tee: 'White', phone: '(570) 881-9846' },
+  { name: 'Dom Castriganano', quota: 33, tee: 'Gold', phone: '(570) 466-8795' },
+  { name: 'Earl Thompson', quota: 32, tee: 'Gold', phone: '(570) 417-2422' },
+  { name: 'Frank Pinnacoli', quota: 31, tee: 'Gold', phone: '(570) 574-6888' },
+  { name: 'Charlie Gelso', quota: 28, tee: 'White', phone: '(570) 574-7166' },
+  { name: 'Greg Mascioli', quota: 28, tee: 'Gold', phone: '(570) 690-0245' },
+  { name: 'Jack Oliver', quota: 35, tee: 'Gold', phone: '(570) 706-6487' },
+  { name: 'Jason Barkley', quota: 34, tee: 'Gold', phone: '(610) 721-6928' },
+  { name: 'Jim Hoover', quota: 31, tee: 'Green', phone: '(570) 760-7967' },
+  { name: 'Jimmy Tressler Jr', quota: 35, tee: 'Gold', phone: '(570) 851-7171' },
+  { name: 'Jim Fronzoni', quota: 29, tee: 'White', phone: '(570) 650-0987' },
+  { name: 'Joe Collini', quota: 31, tee: 'Gold', phone: '(570) 760-8469' },
+  { name: 'Joe Bevevino', quota: 38, tee: 'Gold', phone: '(570) 762-6735' },
+  { name: 'Joey Ferretti', quota: 22, tee: 'Green', phone: '(570) 909-8233' },
+  { name: 'John Henry', quota: 30, tee: 'Gold', phone: '(570) 954-5221' },
+  { name: 'Jonathan Wilson', quota: 35, tee: 'Gold', phone: '(570) 540-3575' },
+  { name: 'Kenny Wallace', quota: 28, tee: 'Gold', phone: '' },
+  { name: 'Lance Sutter', quota: 17, tee: 'White', phone: '(570) 470-1596' },
+  { name: 'Liam Gill', quota: 34, tee: 'Gold', phone: '(570) 406-6137' },
+  { name: 'Logan Paczewski', quota: 42, tee: 'Gold', phone: '(570) 574-1124' },
+  { name: 'Marty Wilbur', quota: 26, tee: 'White', phone: '(570) 407-0370' },
+  { name: 'Matt Dolan', quota: 30, tee: 'Gold', phone: '(570) 814-7675' },
+  { name: 'Matt Tresssler', quota: 30, tee: 'Gold', phone: '(570) 507-1811' },
+  { name: 'Michael Luggiano', quota: 45, tee: 'Black', phone: '(570) 814-0250' },
+  { name: 'Michael Boland', quota: 32, tee: 'Gold', phone: '(570) 262-6896' },
+  { name: 'Michael Grimes', quota: 32, tee: 'Gold', phone: '(570) 814-3953' },
+  { name: 'Mike Kashnicki', quota: 37, tee: 'Gold', phone: '(570) 331-9215' },
+  { name: 'Mike Vassil', quota: 31, tee: 'Gold', phone: '(570) 575-0869' },
+  { name: 'Frank Nockley', quota: 30, tee: 'Gold', phone: '(570) 706-0399' },
+  { name: 'Paul Schaub', quota: 34, tee: 'Gold', phone: '(806) 438-4446' },
+  { name: 'Santo Lafoca', quota: 29, tee: 'Green', phone: '(570) 881-9997' },
+  { name: 'Scott Carney', quota: 29, tee: 'White', phone: '(215) 837-1139' },
+  { name: 'Steve Doziak', quota: 29, tee: 'Green', phone: '(570) 706-0369' },
+  { name: 'Tony Gallas', quota: 22, tee: 'White', phone: '(570) 479-4879' },
+  { name: 'Tim Rutkowski', quota: 32, tee: 'Gold', phone: '(570) 855-0447' },
+  { name: 'Todd Vonderheid', quota: 35, tee: 'Gold', phone: '(570) 760-4632' },
+  { name: 'Tony Bevevino', quota: 37, tee: 'Gold', phone: '(570) 762-6735' },
+  { name: 'Tyler McGarry', quota: 38, tee: 'Gold', phone: '(570) 362-1764' },
+];
+
+function reconcileRoster(profiles) {
+  const existingKeys = new Set(
+    profiles.map(p => (p.name || '').trim().toLowerCase().replace(/\s+/g, ' '))
+  );
+  KNOWN_ROSTER.forEach(r => {
+    const key = r.name.trim().toLowerCase().replace(/\s+/g, ' ');
+    if (existingKeys.has(key)) return;
+    profiles.push({ id: genId(), name: r.name, quota: r.quota, tee: r.tee, phone: r.phone || '' });
+    existingKeys.add(key);
+  });
+}
+
 function dedupeProfilesList(profiles, history) {
   const roundsOf = (id) => history.filter(r => r.players.some(rp => rp.id === id)).length;
   const groups = new Map();
@@ -685,17 +759,21 @@ async function syncFromSupabase() {
     mergedHistory.sort((a, b) => new Date(a.date) - new Date(b.date));
     localStorage.setItem(HKEY, JSON.stringify(mergedHistory));
 
-    // Collapse any duplicate-named profiles (e.g. from a device that
-    // hadn't synced yet when a name was re-added) BEFORE deciding what
-    // to self-heal, so a dropped duplicate never gets pushed back up.
-    const { kept: mergedProfiles, removedIds } = dedupeProfilesList(mergedProfilesRaw, mergedHistory);
+    // Collapse any duplicate-named profiles for DISPLAY/local-storage
+    // purposes only. This never deletes anything from Supabase anymore —
+    // an earlier version did, and a false-positive name match could
+    // permanently destroy a real player's row. If dupes still exist
+    // remotely they'll just keep getting silently merged down to one
+    // on every load, harmlessly, until they're cleaned up by hand.
+    const { kept: mergedProfiles } = dedupeProfilesList(mergedProfilesRaw, mergedHistory);
+
+    // Restore anyone from the known club roster who isn't currently
+    // present under any name variant — a safety net against profiles
+    // that were lost to a past bug. Additive only: never touches or
+    // duplicates a name that's already there. Mutates mergedProfiles.
+    reconcileRoster(mergedProfiles);
+
     localStorage.setItem(PKEY, JSON.stringify(mergedProfiles));
-    for (const id of removedIds) {
-      await sbDelete('profiles', id);
-    }
-    if (selectedProfileId && removedIds.includes(selectedProfileId)) {
-      selectedProfileId = null;
-    }
 
     // Self-heal: push up anything that's local-only (i.e. wasn't in the
     // remote set) so it reaches Supabase even if an earlier write failed.

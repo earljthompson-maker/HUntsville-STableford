@@ -515,7 +515,7 @@ tfoot .quota-line { font-size: 11px; color: var(--ink-soft); font-weight: 400; }
     </div>
     <div class="modal-foot">
       <button class="btn btn-outline btn-sm" onclick="closeProfileModal()">Cancel</button>
-      <button class="btn btn-primary btn-sm" onclick="saveProfile()">Save Player</button>
+      <button class="btn btn-primary btn-sm" id="m-save-btn" onclick="saveProfile()">Save Player</button>
     </div>
   </div>
 </div>
@@ -1062,13 +1062,20 @@ function closeProfileModal() {
   document.getElementById('profile-modal').classList.remove('open');
 }
 
-function saveProfile() {
+async function saveProfile() {
   const name  = document.getElementById('m-name').value.trim();
   if (!name) { alert('Enter a name.'); return; }
   const quota = parseInt(document.getElementById('m-quota').value) || 0;
   const tee   = document.getElementById('m-tee').value || 'White';
   const phone = document.getElementById('m-phone').value.trim();
   const pid   = document.getElementById('edit-pid').value;
+
+  // Refresh from the shared database first so we're never editing on top
+  // of a stale/partial local cache (which would otherwise get saved back
+  // and look like other players had disappeared).
+  const saveBtn = document.getElementById('m-save-btn');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving…'; }
+  await syncFromSupabase();
 
   const profiles = loadProfiles();
   if (pid) {
@@ -1078,6 +1085,7 @@ function saveProfile() {
     profiles.push({ id: genId(), name, quota, tee, phone });
   }
   saveProfiles(profiles);
+  if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save Player'; }
   closeProfileModal();
   renderProfiles();
 }
@@ -1105,7 +1113,10 @@ function confirmAction() {
 function deleteProfile(pid) {
   const p = loadProfiles().find(x => x.id === pid);
   const name = p ? p.name : 'this player';
-  showConfirm(`Delete ${name}?`, () => {
+  showConfirm(`Delete ${name}?`, async () => {
+    // Same principle as saveProfile: refresh first so we don't overwrite
+    // the shared roster with a stale local snapshot.
+    await syncFromSupabase();
     saveProfiles(loadProfiles().filter(x => x.id !== pid));
     sbDelete('profiles', pid);
     if (selectedProfileId === pid) selectedProfileId = null;

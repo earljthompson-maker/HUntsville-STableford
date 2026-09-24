@@ -1683,6 +1683,20 @@ function updateScore(pid, half, val) {
   renderScorecard();
 }
 
+// Once a score field has 2 digits, jump straight to the next field in
+// tab order (front → back → next player's front, etc.). The scorecard
+// re-renders its inputs from scratch on every save, which would wipe
+// out a focus() called directly here — so instead we save the value
+// ourselves and stash which tabindex to refocus once rendering
+// finishes; renderScorecard() applies it at the end.
+let pendingFocusTabIndex = null;
+function autoAdvanceScore(el, pid, half) {
+  if (el.value.length < 2) return;
+  const ti = parseInt(el.getAttribute('tabindex'), 10);
+  pendingFocusTabIndex = ti ? ti + 1 : null;
+  updateScore(pid, half, el.value);
+}
+
 function teamTotal(team) {
   return team.playerIds.reduce((s, pid) => s + totalPoints(pid), 0);
 }
@@ -1741,6 +1755,7 @@ function renderScorecard() {
           <div style="font-size:11px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;">FRONT</div>
           <input class="score-input" type="number" min="0" max="100" placeholder="—" value="${s.front}"
             tabindex="${tabIdx++}"
+            oninput="autoAdvanceScore(this,'${p.id}','front')"
             onchange="updateScore('${p.id}','front',this.value)" onblur="updateScore('${p.id}','front',this.value)">
         </div>
         ${hasFrontBack ? `
@@ -1748,6 +1763,7 @@ function renderScorecard() {
           <div style="font-size:11px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;">BACK</div>
           <input class="score-input" type="number" min="0" max="100" placeholder="—" value="${s.back}"
             tabindex="${tabIdx++}"
+            oninput="autoAdvanceScore(this,'${p.id}','back')"
             onchange="updateScore('${p.id}','back',this.value)" onblur="updateScore('${p.id}','back',this.value)">
         </div>
         <div style="text-align:center;min-width:44px;border-left:1px solid var(--rule);padding-left:10px;">
@@ -1780,6 +1796,14 @@ function renderScorecard() {
 
   updateLeaderboard();
   renderQuotaBars();
+
+  // Apply any pending auto-advance focus now that the inputs above
+  // have just been rebuilt fresh (see autoAdvanceScore).
+  if (pendingFocusTabIndex != null) {
+    const next = document.querySelector(`.score-input[tabindex="${pendingFocusTabIndex}"]`);
+    if (next) { next.focus(); next.select(); }
+    pendingFocusTabIndex = null;
+  }
 }
 
 function updateLeaderboard() {
@@ -1939,8 +1963,7 @@ function finishRound() {
       <div style="margin:14px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">⛳ Team Result</div>
       ${blindNote}
       <div style="font-size:18px;font-weight:800;color:var(--gold-light);margin-bottom:10px;">${teamWinStr}</div>
-      <table class="result-table" style="margin-bottom:10px;"><tbody>${teamRows}</tbody></table>
-      <div style="margin:10px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">🏌️ Individual Result</div>`;
+      <table class="result-table" style="margin-bottom:10px;"><tbody>${teamRows}</tbody></table>`;
   }
 
   // ── Individual result rows — sorted by delta ──
@@ -2212,7 +2235,7 @@ function finishRound() {
     <div class="result-score">${state.date}</div>
     ${teamSection}
     ${teamPayoutHtml}
-    ${!state.isTeamGame ? `<div style="margin:14px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">🏌️ Individual Result</div>` : ''}
+    <div style="margin:14px 0 6px;font-size:11px;color:#8FBFAA;text-transform:uppercase;letter-spacing:0.5px;">🏌️ Individual Result</div>
     <div style="margin-bottom:8px;font-size:14px;color:var(--gold-light);font-weight:700;">${indivWinStr}</div>
     <table class="result-table"><tbody>${indivRows}</tbody></table>
     ${indivPayoutHtml}
